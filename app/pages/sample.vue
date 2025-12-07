@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, nextTick, computed } from "vue";
-import { VueFlow, useVueFlow, type Node, type Edge } from "@vue-flow/core";
+import { VueFlow, useVueFlow, Handle, Position, type Node, type Edge } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
 
@@ -168,6 +168,8 @@ const initializeFlow = () => {
             id: "e-main-1",
             source: "main",
             target: "1",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -175,6 +177,8 @@ const initializeFlow = () => {
             id: "e-main-2",
             source: "main",
             target: "2",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -182,6 +186,8 @@ const initializeFlow = () => {
             id: "e-main-3",
             source: "main",
             target: "3",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -189,6 +195,8 @@ const initializeFlow = () => {
             id: "e-main-4",
             source: "main",
             target: "4",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -196,6 +204,8 @@ const initializeFlow = () => {
             id: "e-main-5",
             source: "main",
             target: "5",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -203,6 +213,8 @@ const initializeFlow = () => {
             id: "e-3-3-1",
             source: "3",
             target: "3-1",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -210,6 +222,8 @@ const initializeFlow = () => {
             id: "e-3-3-2",
             source: "3",
             target: "3-2",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -217,6 +231,8 @@ const initializeFlow = () => {
             id: "e-3-3-3",
             source: "3",
             target: "3-3",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -224,6 +240,8 @@ const initializeFlow = () => {
             id: "e-3-3-4",
             source: "3",
             target: "3-4",
+            sourceHandle: "source-right",
+            targetHandle: "target-left",
             type: "smoothstep",
             animated: true,
         },
@@ -322,6 +340,8 @@ const addChildNode = (parentId: string) => {
         id: `e-${parentId}-${newId}`,
         source: parentId,
         target: newId,
+        sourceHandle: "source-right",
+        targetHandle: "target-left",
         type: "smoothstep",
         animated: true,
     });
@@ -383,6 +403,14 @@ useVueFlow();
                                     }
                                 }
                                     ">
+                                <!-- 左側のHandle（入力用） -->
+                                <Handle
+                                    id="target-left"
+                                    type="target"
+                                    :position="Position.Left"
+                                    class="node-handle node-handle-left"
+                                />
+                                
                                 <div v-if="editingNodeId === nodeProps.id" class="node-edit-mode">
                                     <input :id="'input-' + nodeProps.id" v-model="editText" class="node-input"
                                         @blur="saveEdit" @keyup.enter="saveEdit" @keyup.esc="cancelEdit" />
@@ -420,6 +448,14 @@ useVueFlow();
                                         </button>
                                     </div>
                                 </div>
+                                
+                                <!-- 右側のHandle（出力用） -->
+                                <Handle
+                                    id="source-right"
+                                    type="source"
+                                    :position="Position.Right"
+                                    class="node-handle node-handle-right"
+                                />
                             </div>
                         </template>
                     </VueFlow>
@@ -552,5 +588,21 @@ useVueFlow();
     background: white;
     color: inherit;
     outline: none;
+}
+
+.node-handle {
+    width: 10px;
+    height: 10px;
+    background: #3b82f6;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
+.node-handle-left {
+    left: -5px;
+}
+
+.node-handle-right {
+    right: -5px;
 }
 </style>
