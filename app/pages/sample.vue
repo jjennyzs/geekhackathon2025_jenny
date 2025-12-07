@@ -18,7 +18,7 @@ const initializeFlow = () => {
         {
             id: "main",
             type: "custom",
-            position: { x: 400, y: 50 },
+            position: { x: 50, y: 300 },
             data: { label: "大きな目標", isMain: true },
             style: {
                 background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
@@ -34,7 +34,7 @@ const initializeFlow = () => {
         {
             id: "1",
             type: "custom",
-            position: { x: 100, y: 250 },
+            position: { x: 400, y: 100 },
             data: { label: "サブ目標1", parentId: "main" },
             style: {
                 background: "#dbeafe",
@@ -62,7 +62,7 @@ const initializeFlow = () => {
         {
             id: "3",
             type: "custom",
-            position: { x: 700, y: 250 },
+            position: { x: 400, y: 400 },
             data: { label: "サブ目標3", parentId: "main" },
             style: {
                 background: "#dbeafe",
@@ -76,7 +76,7 @@ const initializeFlow = () => {
         {
             id: "4",
             type: "custom",
-            position: { x: 1000, y: 250 },
+            position: { x: 400, y: 550 },
             data: { label: "サブ目標4", parentId: "main" },
             style: {
                 background: "#dbeafe",
@@ -90,7 +90,7 @@ const initializeFlow = () => {
         {
             id: "5",
             type: "custom",
-            position: { x: 1300, y: 250 },
+            position: { x: 400, y: 700 },
             data: { label: "サブ目標5", parentId: "main" },
             style: {
                 background: "#dbeafe",
@@ -104,7 +104,7 @@ const initializeFlow = () => {
         {
             id: "3-1",
             type: "custom",
-            position: { x: 600, y: 450 },
+            position: { x: 700, y: 300 },
             data: { label: "孫目標1", parentId: "3" },
             style: {
                 background: "#dcfce7",
@@ -119,7 +119,7 @@ const initializeFlow = () => {
         {
             id: "3-2",
             type: "custom",
-            position: { x: 800, y: 450 },
+            position: { x: 700, y: 450 },
             data: { label: "孫目標2", parentId: "3" },
             style: {
                 background: "#dcfce7",
@@ -134,7 +134,7 @@ const initializeFlow = () => {
         {
             id: "3-3",
             type: "custom",
-            position: { x: 1000, y: 450 },
+            position: { x: 700, y: 600 },
             data: { label: "孫目標3", parentId: "3" },
             style: {
                 background: "#dcfce7",
@@ -149,7 +149,7 @@ const initializeFlow = () => {
         {
             id: "3-4",
             type: "custom",
-            position: { x: 1200, y: 450 },
+            position: { x: 700, y: 750 },
             data: { label: "孫目標4", parentId: "3" },
             style: {
                 background: "#dcfce7",
@@ -295,8 +295,9 @@ const addChildNode = (parentId: string) => {
     ).length;
 
     const newId = `node-${nodeIdCounter++}`;
-    const newX = parentNode.position.x + 260;
-    const newY = parentNode.position.y - 80 + siblingsCount * 80;
+    // 親ノードの右側に縦並びで配置
+    const newX = parentNode.position.x + 300;
+    const newY = parentNode.position.y + siblingsCount * 150;
 
     nodes.value.push({
         id: newId,
@@ -327,7 +328,6 @@ const addChildNode = (parentId: string) => {
 
     // 親ノードを展開
     expandedNodes.value.add(parentId);
-    updateNodeVisibility();
 };
 
 const deleteNode = (nodeId: string, isMain?: boolean) => {
@@ -375,7 +375,7 @@ useVueFlow();
 
                         <!-- ★ ここがカスタムノード本体（slot 版） ★ -->
                         <template #node-custom="nodeProps">
-                            <div class="custom-node" :style="nodeProps.style" @dblclick="startEdit(nodeProps.id)"
+                            <div class="custom-node" :style="(nodeProps as any).style" @dblclick="startEdit(nodeProps.id)"
                                 @click="
                   if (!editingNodeId) {
                                     if (hasChildren(nodeProps.id)) {
