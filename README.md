@@ -26,7 +26,7 @@
 
 ## 3.パッケージのインストール
 
-- ルート直下でnpm run dev
+- ルート直下でnpm install
 - functionsディレクトリに移動してnpm installを行う
 
 ## 4.ページ起動
