@@ -1,5 +1,5 @@
-export type Goal={
-    title:string;
-    weight:number;
-    feedback:string;
-}
+export type Goal = {
+  title: string;
+  weight: number;
+  feedback: string;
+};
