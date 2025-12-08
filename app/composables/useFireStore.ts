@@ -1,4 +1,10 @@
-import { doc, getDoc, collection, getDocs, type Firestore } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  type Firestore,
+} from "firebase/firestore";
 import type { Goal } from "../../@types/goal";
 
 export const useFireStore = () => {
@@ -16,7 +22,7 @@ export const useFireStore = () => {
       // 親目標を取得
       const goalRef = doc(db, "users", uid, "goals", goalId);
       const goalSnap = await getDoc(goalRef);
-      
+
       if (!goalSnap.exists()) {
         throw new Error(`Goal with id ${goalId} not found`);
       }
@@ -41,7 +47,7 @@ export const useFireStore = () => {
             goalId,
             "steps",
             stepId,
-            "subStep"
+            "subStep",
           );
           const grandchildStepsSnap = await getDocs(grandchildStepsRef);
 
@@ -49,7 +55,7 @@ export const useFireStore = () => {
             (grandchildDoc) => ({
               id: grandchildDoc.id,
               ...(grandchildDoc.data() as Goal),
-            })
+            }),
           );
 
           return {
@@ -57,7 +63,7 @@ export const useFireStore = () => {
             ...stepData,
             steps: grandchildSteps,
           };
-        })
+        }),
       );
 
       return {
@@ -75,4 +81,3 @@ export const useFireStore = () => {
     getGoalWithSteps,
   };
 };
-
