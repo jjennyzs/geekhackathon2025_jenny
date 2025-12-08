@@ -1,5 +1,4 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <main class="grid min-h-screen place-items-center">
@@ -8,5 +7,6 @@
     >
       Hello World
     </h1>
+    <h2>deploy test</h2>
   </main>
 </template>
