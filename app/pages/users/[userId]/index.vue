@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, defineComponent, h, type PropType } from "vue";
+import { ref, onMounted } from "vue";
+import GoalCard from "~/components/GoalCard.vue";
 import { useRoute } from "vue-router";
 import { useFireStore } from "~/composables/useFireStore";
 import type { TodoDoc } from "../../../../@types/todoDoc";
@@ -7,7 +8,17 @@ import type { TodoDoc } from "../../../../@types/todoDoc";
 // ルートパラメータからuserIdを取得
 const route = useRoute();
 const userId = route.params.userId as string;
-const categoryId = "health"; // ハードコーディング
+
+// カテゴリの定義
+const categories = [
+  { id: "health", label: "健康" },
+  { id: "life", label: "生活" },
+  { id: "study", label: "学習" },
+  { id: "work", label: "仕事" },
+] as const;
+
+// 選択中のカテゴリ
+const selectedCategoryId = ref<string>("health");
 
 // Firestore composable
 const {
@@ -22,6 +33,7 @@ const {
   updateGoal,
   deleteGoal,
   calculateAndUpdateGoalRatio,
+  getCategoryRatio,
 } = useFireStore();
 
 // Todoの型定義
@@ -49,6 +61,7 @@ type GoalWithSteps = {
 const goals = ref<GoalWithSteps[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
+const categoryRatio = ref<number>(0);
 
 // モーダル状態
 const showStepModal = ref(false);
@@ -86,15 +99,25 @@ const fetchRoadmapData = async () => {
   try {
     loading.value = true;
     error.value = null;
-    const data = await getAllGoalsWithSteps(userId, categoryId);
+    const data = await getAllGoalsWithSteps(userId, selectedCategoryId.value);
     // 新しい配列を作成してリアクティビティを確実にトリガー
     goals.value = [...data];
+    
+    // カテゴリ達成率を取得
+    const ratio = await getCategoryRatio(userId, selectedCategoryId.value);
+    categoryRatio.value = ratio;
   } catch (err: any) {
     console.error("Error fetching roadmap data:", err);
     error.value = err?.message || "ロードマップデータの取得に失敗しました";
   } finally {
     loading.value = false;
   }
+};
+
+// カテゴリを変更
+const changeCategory = (categoryId: string) => {
+  selectedCategoryId.value = categoryId;
+  fetchRoadmapData();
 };
 
 // コンポーネントマウント時にデータを取得
@@ -138,7 +161,7 @@ const saveStep = async () => {
       // 更新
       await updateStep(
         userId,
-        categoryId,
+        selectedCategoryId.value,
         editingStep.value.goalId,
         editingStep.value.stepId,
         { title: stepTitle.value },
@@ -148,7 +171,7 @@ const saveStep = async () => {
       // 追加
       await addStep(
         userId,
-        categoryId,
+        selectedCategoryId.value,
         editingStep.value.goalId,
         { title: stepTitle.value },
         editingStep.value.stepPath,
@@ -175,7 +198,7 @@ const handleDeleteStep = async (
   }
 
   try {
-    await deleteStep(userId, categoryId, goalId, stepId, stepPath);
+    await deleteStep(userId, selectedCategoryId.value, goalId, stepId, stepPath);
     await fetchRoadmapData();
   } catch (err: any) {
     console.error("Error deleting step:", err);
@@ -233,7 +256,7 @@ const saveTodo = async () => {
       // 更新
       await updateTodo(
         userId,
-        categoryId,
+        selectedCategoryId.value,
         editingTodo.value.goalId,
         editingTodo.value.todoId,
         todoData,
@@ -243,7 +266,7 @@ const saveTodo = async () => {
       // 追加
       await addTodo(
         userId,
-        categoryId,
+        selectedCategoryId.value,
         editingTodo.value.goalId,
         todoData,
         editingTodo.value.stepPath,
@@ -286,12 +309,12 @@ const saveGoal = async () => {
     saving.value = true;
     if (editingGoal.value?.goalId) {
       // 更新
-      await updateGoal(userId, categoryId, editingGoal.value.goalId, {
+      await updateGoal(userId, selectedCategoryId.value, editingGoal.value.goalId, {
         title: goalTitle.value,
       });
     } else {
       // 追加
-      await addGoal(userId, categoryId, {
+      await addGoal(userId, selectedCategoryId.value, {
         title: goalTitle.value,
         ratio: 0,
       });
@@ -314,7 +337,7 @@ const handleDeleteGoal = async (goalId: string) => {
 
   try {
     saving.value = true;
-    await deleteGoal(userId, categoryId, goalId);
+    await deleteGoal(userId, selectedCategoryId.value, goalId);
     await fetchRoadmapData();
   } catch (err: any) {
     console.error("Error deleting goal:", err);
@@ -335,7 +358,7 @@ const toggleTodoCompletion = async (
     saving.value = true;
     await updateTodo(
       userId,
-      categoryId,
+      selectedCategoryId.value,
       goalId,
       todoId,
       { isFinished: !currentStatus },
@@ -343,7 +366,7 @@ const toggleTodoCompletion = async (
     );
 
     // 達成率を再計算
-    await calculateAndUpdateGoalRatio(userId, categoryId, goalId);
+    await calculateAndUpdateGoalRatio(userId, selectedCategoryId.value, goalId);
 
     // UIを更新
     const goal = goals.value.find((g) => g.id === goalId);
@@ -404,7 +427,7 @@ const handleDeleteTodo = async (
   }
 
   try {
-    await deleteTodo(userId, categoryId, goalId, todoId, stepPath);
+    await deleteTodo(userId, selectedCategoryId.value, goalId, todoId, stepPath);
     
     // UIから直接削除（即座に反映）
     const goal = goals.value.find((g) => g.id === goalId);
@@ -477,289 +500,7 @@ const handleDeleteTodo = async (
   }
 };
 
-// ステップを再帰的に表示するコンポーネント
-const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
-  name: "RoadmapStep",
-  props: {
-    step: {
-      type: Object as PropType<StepWithChildren>,
-      required: true,
-    },
-    level: {
-      type: Number,
-      default: 0,
-    },
-    goalId: {
-      type: String,
-      required: true,
-    },
-    stepPath: {
-      type: Array as PropType<string[]>,
-      default: () => [],
-    },
-    onEditStep: {
-      type: Function as PropType<
-        (goalId: string, stepPath: string[], stepId: string, title: string) => void
-      >,
-      required: true,
-    },
-    onDeleteStep: {
-      type: Function as PropType<
-        (goalId: string, stepId: string, stepPath: string[]) => void
-      >,
-      required: true,
-    },
-    onAddSubStep: {
-      type: Function as PropType<
-        (goalId: string, stepPath: string[]) => void
-      >,
-      required: true,
-    },
-    onAddTodo: {
-      type: Function as PropType<
-        (goalId: string, stepPath: string[]) => void
-      >,
-      required: true,
-    },
-    onEditTodo: {
-      type: Function as PropType<
-        (
-          goalId: string,
-          stepPath: string[],
-          todoId: string,
-          task: string,
-          isFinished: boolean,
-          weight?: number,
-        ) => void
-      >,
-      required: true,
-    },
-    onDeleteTodo: {
-      type: Function as PropType<
-        (goalId: string, todoId: string, stepPath: string[]) => void
-      >,
-      required: true,
-    },
-  },
-  setup(props): () => ReturnType<typeof h> {
-    return () => {
-      const {
-        step,
-        level,
-        goalId,
-        stepPath,
-        onEditStep,
-        onDeleteStep,
-        onAddSubStep,
-        onAddTodo,
-        onEditTodo,
-        onDeleteTodo,
-      } = props;
-      const indent = level * 24;
-      const currentStepPath = [...stepPath, step.id];
-
-      return h(
-        "div",
-        {
-          class: "step-item",
-          style: {
-            marginLeft: `${indent}px`,
-            marginTop: level > 0 ? "8px" : "0",
-            padding: "8px 12px",
-            borderLeft: level > 0 ? "3px solid #d1d5db" : "none",
-            backgroundColor: level === 0 ? "#f9fafb" : "transparent",
-            borderRadius: "4px",
-            transition: "background-color 0.2s",
-          },
-          onMouseenter: (e: MouseEvent) => {
-            if (e.currentTarget) {
-              (e.currentTarget as HTMLElement).style.backgroundColor = "#f3f4f6";
-            }
-          },
-          onMouseleave: (e: MouseEvent) => {
-            if (e.currentTarget) {
-              (e.currentTarget as HTMLElement).style.backgroundColor =
-                level === 0 ? "#f9fafb" : "transparent";
-            }
-          },
-        },
-        [
-          h(
-            "div",
-            {
-              class: "flex items-center justify-between group",
-            },
-            [
-              h(
-                "div",
-                { class: "flex items-center flex-1" },
-                [
-                  level > 0 &&
-                    h("div", {
-                      class: "w-2 h-2 rounded-full bg-gray-400 mr-2",
-                    }),
-                  h("span", { class: "text-gray-800 font-medium" }, step.title),
-                ],
-              ),
-              h(
-                "div",
-                { class: "flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity" },
-                [
-                  h(
-                    "button",
-                    {
-                      class: "text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600",
-                      onClick: () => onAddSubStep(goalId, currentStepPath),
-                    },
-                    "+ ステップ",
-                  ),
-                  h(
-                    "button",
-                    {
-                      class: "text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600",
-                      onClick: () => onAddTodo(goalId, currentStepPath),
-                    },
-                    "+ TODO",
-                  ),
-                  h(
-                    "button",
-                    {
-                      class: "text-xs px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600",
-                      onClick: () => onEditStep(goalId, stepPath, step.id, step.title),
-                    },
-                    "編集",
-                  ),
-                  h(
-                    "button",
-                    {
-                      class: "text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600",
-                      onClick: () => onDeleteStep(goalId, step.id, stepPath),
-                    },
-                    "削除",
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // todoを表示
-          step.todos &&
-          step.todos.length > 0 &&
-          h(
-            "div",
-            {
-              class: "mt-2 ml-4 space-y-1",
-            },
-            step.todos.map((todo: TodoWithId) =>
-              h(
-                "div",
-                {
-                  key: todo.id,
-                  class: `text-sm px-2 py-1 rounded border-l-2 flex items-center justify-between group ${
-                    todo.isFinished
-                      ? "text-gray-500 bg-gray-50 border-gray-300 line-through"
-                      : "text-gray-600 bg-blue-50 border-blue-300"
-                  }`,
-                },
-                [
-                  h(
-                    "div",
-                    { class: "flex items-center flex-1" },
-                    [
-                      h(
-                        "button",
-                        {
-                          class: `mr-2 px-2 py-1 text-xs rounded ${
-                            todo.isFinished
-                              ? "bg-green-500 text-white hover:bg-green-600"
-                              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-                          }`,
-                          onClick: () =>
-                            toggleTodoCompletion(
-                              goalId,
-                              todo.id,
-                              currentStepPath,
-                              todo.isFinished,
-                            ),
-                        },
-                        todo.isFinished ? "✓ 完了" : "未完了",
-                      ),
-                      h(
-                        "span",
-                        { class: "font-semibold text-blue-700 mr-2" },
-                        todo.isFinished ? "✓ DONE: " : "TODO: ",
-                      ),
-                      h("span", {}, todo.task),
-                      todo.weight !== undefined &&
-                        h(
-                          "span",
-                          { class: "ml-2 text-xs text-gray-500" },
-                          `(重み: ${todo.weight})`,
-                        ),
-                    ],
-                  ),
-                  h(
-                    "div",
-                    { class: "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" },
-                    [
-                      h(
-                        "button",
-                        {
-                          class: "text-xs px-1 py-0.5 bg-yellow-500 text-white rounded hover:bg-yellow-600",
-                          onClick: () =>
-                            onEditTodo(
-                              goalId,
-                              stepPath,
-                              todo.id,
-                              todo.task,
-                              todo.isFinished,
-                              todo.weight,
-                            ),
-                        },
-                        "編集",
-                      ),
-                      h(
-                        "button",
-                        {
-                          class: "text-xs px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600",
-                          onClick: () => onDeleteTodo(goalId, todo.id, currentStepPath),
-                        },
-                        "削除",
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          step.steps &&
-          step.steps.length > 0 &&
-          h(
-            "div",
-            {
-              class: "mt-2",
-            },
-            step.steps.map(
-              (childStep: StepWithChildren): ReturnType<typeof h> =>
-                h(RoadmapStep, {
-                  key: childStep.id,
-                  step: childStep,
-                  level: level + 1,
-                  goalId,
-                  stepPath: currentStepPath,
-                  onEditStep,
-                  onDeleteStep,
-                  onAddSubStep,
-                  onAddTodo,
-                  onEditTodo,
-                  onDeleteTodo,
-                }),
-            ),
-          ),
-        ],
-      );
-    };
-  },
-});
+// RoadmapStepコンポーネントはGoalCardコンポーネント内に移動しました
 </script>
 
 <template>
@@ -772,6 +513,31 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
       >
         + 目標を追加
       </button>
+    </div>
+
+    <!-- カテゴリタブ -->
+    <div class="mb-6 border-b border-gray-200">
+      <nav class="flex space-x-8" aria-label="カテゴリタブ">
+        <button
+          v-for="category in categories"
+          :key="category.id"
+          @click="changeCategory(category.id)"
+          :class="`py-4 px-1 border-b-2 font-medium text-sm ${
+            selectedCategoryId === category.id
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`"
+        >
+          {{ category.label }}
+        </button>
+      </nav>
+    </div>
+
+    <!-- カテゴリ達成率表示 -->
+    <div v-if="!loading && !error" class="mb-8 p-4 bg-blue-100 rounded-lg shadow-sm">
+      <h2 class="text-xl font-bold text-blue-800">
+        カテゴリ達成率: {{ categoryRatio }}%
+      </h2>
     </div>
 
     <!-- ローディング状態 -->
@@ -788,146 +554,26 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
 
     <!-- ロードマップ表示 -->
     <div v-else-if="goals.length > 0" class="space-y-8">
-      <div
+      <GoalCard
         v-for="goal in goals"
         :key="goal.id"
-        class="goal-card bg-white rounded-lg shadow-md p-6"
-      >
-        <div class="goal-header mb-4 pb-4 border-b">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-2xl font-bold text-gray-900">{{ goal.title }}</h2>
-              <div class="mt-2">
-                <span class="text-sm text-gray-600">達成率: </span>
-                <span class="font-semibold">{{ goal.ratio }}%</span>
-              </div>
-            </div>
-            <div class="flex gap-2">
-              <button
-                @click="openGoalModal(goal.id, goal.title)"
-                class="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
-              >
-                編集
-              </button>
-              <button
-                @click="handleDeleteGoal(goal.id)"
-                class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
-                :disabled="saving"
-              >
-                削除
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Goal配下のtodoを表示 -->
-        <div class="mb-4">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-lg font-semibold text-gray-700">TODO</h3>
-            <button
-              @click="openTodoModal(goal.id)"
-              class="text-sm px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              + TODO追加
-            </button>
-          </div>
-          <div v-if="goal.todos && goal.todos.length > 0" class="space-y-1 ml-4">
-            <div
-              v-for="todo in goal.todos"
-              :key="todo.id"
-              :class="`text-sm px-3 py-2 rounded border-l-2 flex items-center justify-between group ${
-                todo.isFinished
-                  ? 'text-gray-500 bg-gray-50 border-gray-300 line-through'
-                  : 'text-gray-600 bg-blue-50 border-blue-300'
-              }`"
-            >
-              <div class="flex items-center">
-                <button
-                  @click="toggleTodoCompletion(goal.id, todo.id, [], todo.isFinished)"
-                  :class="`mr-2 px-2 py-1 text-xs rounded ${
-                    todo.isFinished
-                      ? 'bg-green-500 text-white hover:bg-green-600'
-                      : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-                  }`"
-                  :disabled="saving"
-                >
-                  {{ todo.isFinished ? "✓ 完了" : "未完了" }}
-                </button>
-                <span class="font-semibold text-blue-700 mr-2">
-                  {{ todo.isFinished ? "✓ DONE: " : "TODO: " }}
-                </span>
-                <span>{{ todo.task }}</span>
-                <span
-                  v-if="todo.weight !== undefined"
-                  class="ml-2 text-xs text-gray-500"
-                >
-                  (重み: {{ todo.weight }})
-                </span>
-              </div>
-              <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  @click="
-                    openTodoModal(
-                      goal.id,
-                      [],
-                      todo.id,
-                      todo.task,
-                      todo.isFinished,
-                      todo.weight,
-                    )
-                  "
-                  class="text-xs px-1 py-0.5 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                >
-                  編集
-                </button>
-                <button
-                  @click="handleDeleteTodo(goal.id, todo.id, [])"
-                  class="text-xs px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  削除
-                </button>
-              </div>
-            </div>
-          </div>
-          <p v-else class="text-gray-500 italic ml-4">TODOがありません</p>
-        </div>
-
-        <div class="steps-container">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-700">ステップ</h3>
-            <button
-              @click="openStepModal(goal.id)"
-              class="text-sm px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              + ステップ追加
-            </button>
-          </div>
-          <div v-if="goal.steps && goal.steps.length > 0" class="space-y-2">
-            <component
-              v-for="step in goal.steps"
-              :key="step.id"
-              :is="RoadmapStep"
-              :step="step"
-              :level="0"
-              :goal-id="goal.id"
-              :step-path="[]"
-              :on-edit-step="
-                (gId: string, sPath: string[], sId: string, title: string) =>
-                  openStepModal(gId, sPath, sId, title)
-              "
-              :on-delete-step="handleDeleteStep"
-              :on-add-sub-step="(gId: string, sPath: string[]) => openStepModal(gId, sPath)"
-              :on-add-todo="(gId: string, sPath: string[]) => openTodoModal(gId, sPath)"
-              :on-edit-todo="
-                (gId: string, sPath: string[], tId: string, task: string, finished: boolean, weight?: number) =>
-                  openTodoModal(gId, sPath, tId, task, finished, weight)
-              "
-              :on-delete-todo="handleDeleteTodo"
-            />
-          </div>
-          <p v-else class="text-gray-500 italic">ステップがありません</p>
-        </div>
-      </div>
+        :goal="goal"
+        :saving="saving"
+        @edit-goal="openGoalModal"
+        @delete-goal="handleDeleteGoal"
+        @add-step="(goalId: string) => openStepModal(goalId)"
+        @add-todo="(goalId: string) => openTodoModal(goalId)"
+        @edit-todo="(goalId: string, todoId: string, task: string, isFinished: boolean, weight?: number) => openTodoModal(goalId, [], todoId, task, isFinished, weight)"
+        @delete-todo="(goalId: string, todoId: string) => handleDeleteTodo(goalId, todoId, [])"
+        @toggle-todo="(goalId: string, todoId: string, currentStatus: boolean) => { toggleTodoCompletion(goalId, todoId, [], currentStatus); }"
+        @edit-step="(goalId: string, stepPath: string[], stepId: string, title: string) => openStepModal(goalId, stepPath, stepId, title)"
+        @delete-step="(goalId: string, stepPath: string[], stepId: string) => handleDeleteStep(goalId, stepId, stepPath)"
+        @add-sub-step="(goalId: string, stepPath: string[]) => openStepModal(goalId, stepPath)"
+        @add-todo-to-step="(goalId: string, stepPath: string[]) => openTodoModal(goalId, stepPath)"
+        @edit-todo-in-step="(goalId: string, stepPath: string[], todoId: string, task: string, isFinished: boolean, weight?: number) => openTodoModal(goalId, stepPath, todoId, task, isFinished, weight)"
+        @delete-todo-in-step="(goalId: string, stepPath: string[], todoId: string) => handleDeleteTodo(goalId, todoId, stepPath)"
+        @toggle-todo-in-step="(goalId: string, stepPath: string[], todoId: string, currentStatus: boolean) => toggleTodoCompletion(goalId, todoId, stepPath, currentStatus)"
+      />
     </div>
 
     <!-- データなし状態 -->

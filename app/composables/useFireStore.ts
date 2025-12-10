@@ -564,6 +564,10 @@ export const useFireStore = () => {
       }
 
       const docRef = await addDoc(todosRef, cleanTodoData);
+      
+      // カテゴリ達成率を再計算
+      await updateCategoryRatio(uid, categoryId);
+      
       return docRef.id;
     } catch (error) {
       console.error("Error adding todo:", error);
@@ -669,6 +673,9 @@ export const useFireStore = () => {
       if (verifySnap.exists()) {
         throw new Error("Failed to delete todo");
       }
+      
+      // カテゴリ達成率を再計算
+      await updateCategoryRatio(uid, categoryId);
     } catch (error) {
       console.error("Error deleting todo:", error);
       throw error;
@@ -767,6 +774,8 @@ export const useFireStore = () => {
 
   /**
    * カテゴリの達成率を更新する関数
+   * カテゴリ内のすべてのtodoのうち、達成したtodoの割合を計算する
+   * todoがないgoalは計算から除外する
    * @param uid - ユーザーID
    * @param categoryId - カテゴリID
    */
@@ -803,24 +812,77 @@ export const useFireStore = () => {
         return;
       }
 
-      // 各目標の達成率の平均を計算
-      let totalRatio = 0;
-      goalsSnap.docs.forEach((goalDoc) => {
-        const goalData = goalDoc.data() as Goal;
-        totalRatio += goalData.ratio || 0;
-      });
+      // カテゴリ内のすべてのtodoを集計
+      const allTodos: TodoWithId[] = [];
+      
+      for (const goalDoc of goalsSnap.docs) {
+        const goalId = goalDoc.id;
+        
+        // goal直下のtodoを取得
+        const goalTodos = await getTodos(uid, categoryId, goalId, []);
+        allTodos.push(...goalTodos);
+        
+        // すべてのstep階層を取得
+        const steps = await getStepsRecursively(uid, categoryId, goalId);
+        
+        // step階層からすべてのtodoを集計
+        const stepTodos = collectAllTodosFromSteps(steps);
+        allTodos.push(...stepTodos);
+      }
 
-      const averageRatio = Math.round(totalRatio / goalsSnap.docs.length);
+      // todoがない場合は達成率を0にする
+      if (allTodos.length === 0) {
+        const categoryRef = doc(db, "users", uid, "category", categoryId);
+        await setDoc(
+          categoryRef,
+          { achieveMentRatio: 0 },
+          { merge: true },
+        );
+        return;
+      }
+
+      // 達成したtodoの数をカウント
+      const completedTodos = allTodos.filter((todo) => todo.isFinished).length;
+      
+      // 達成率を計算（todoのうち達成した割合）
+      const categoryRatio = Math.round((completedTodos / allTodos.length) * 100);
 
       // カテゴリの達成率を更新
       const categoryRef = doc(db, "users", uid, "category", categoryId);
       await setDoc(
         categoryRef,
-        { achieveMentRatio: averageRatio },
+        { achieveMentRatio: categoryRatio },
         { merge: true },
       );
     } catch (error) {
       console.error("Error updating category ratio:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * カテゴリの達成率を取得する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @returns カテゴリの達成率
+   */
+  const getCategoryRatio = async (
+    uid: string,
+    categoryId: string,
+  ): Promise<number> => {
+    try {
+      const categoryRef = doc(db, "users", uid, "category", categoryId);
+      const categorySnap = await getDoc(categoryRef);
+      
+      if (categorySnap.exists()) {
+        const categoryData = categorySnap.data() as CategoryDoc;
+        return categoryData.achieveMentRatio || 0;
+      }
+      
+      // カテゴリが存在しない場合は0を返す
+      return 0;
+    } catch (error) {
+      console.error("Error getting category ratio:", error);
       throw error;
     }
   };
@@ -907,5 +969,6 @@ export const useFireStore = () => {
     deleteGoal,
     calculateAndUpdateGoalRatio,
     updateCategoryRatio,
+    getCategoryRatio,
   };
 };
