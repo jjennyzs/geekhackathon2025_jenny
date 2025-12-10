@@ -48,7 +48,7 @@ const emit = defineEmits<{
 // RoadmapStepコンポーネント（簡略版、後で別ファイルに分けることも可能）
 import { defineComponent, h, type PropType } from "vue";
 
-const RoadmapStep = defineComponent({
+const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
   name: "RoadmapStep",
   props: {
     step: {
@@ -117,7 +117,7 @@ const RoadmapStep = defineComponent({
       required: true,
     },
   },
-  setup(props) {
+  setup(props): () => ReturnType<typeof h> {
     return () => {
       const {
         step,
@@ -291,7 +291,7 @@ const RoadmapStep = defineComponent({
             {
               class: "mt-2",
             },
-            step.steps.map((childStep: StepWithChildren) =>
+            step.steps.map((childStep: StepWithChildren): ReturnType<typeof h> =>
               h(RoadmapStep, {
                 key: childStep.id,
                 step: childStep,
@@ -434,13 +434,13 @@ const RoadmapStep = defineComponent({
           :level="0"
           :goal-id="goal.id"
           :step-path="[]"
-          @edit-step="$emit('edit-step', $event[0], $event[1], $event[2], $event[3])"
-          @delete-step="$emit('delete-step', $event[0], $event[1], $event[2])"
-          @add-sub-step="$emit('add-sub-step', $event[0], $event[1])"
-          @add-todo="$emit('add-todo-to-step', $event[0], $event[1])"
-          @edit-todo="$emit('edit-todo-in-step', $event[0], $event[1], $event[2], $event[3], $event[4], $event[5])"
-          @delete-todo="$emit('delete-todo-in-step', $event[0], $event[1], $event[2])"
-          @toggle-todo-in-step="(goalId, stepPath, todoId, currentStatus) => $emit('toggle-todo-in-step', goalId, stepPath, todoId, currentStatus)"
+          :on-edit-step="(goalId: string, stepPath: string[], stepId: string, title: string) => $emit('edit-step', goalId, stepPath, stepId, title)"
+          :on-delete-step="(goalId: string, stepId: string, stepPath: string[]) => $emit('delete-step', goalId, stepPath, stepId)"
+          :on-add-sub-step="(goalId: string, stepPath: string[]) => $emit('add-sub-step', goalId, stepPath)"
+          :on-add-todo="(goalId: string, stepPath: string[]) => $emit('add-todo-to-step', goalId, stepPath)"
+          :on-edit-todo="(goalId: string, stepPath: string[], todoId: string, task: string, isFinished: boolean, weight?: number) => $emit('edit-todo-in-step', goalId, stepPath, todoId, task, isFinished, weight)"
+          :on-delete-todo="(goalId: string, todoId: string, stepPath: string[]) => $emit('delete-todo-in-step', goalId, stepPath, todoId)"
+          :on-toggle-todo="(goalId: string, stepPath: string[], todoId: string, currentStatus: boolean) => $emit('toggle-todo-in-step', goalId, stepPath, todoId, currentStatus)"
         />
       </div>
       <p v-else class="text-gray-500 italic">ステップがありません</p>
