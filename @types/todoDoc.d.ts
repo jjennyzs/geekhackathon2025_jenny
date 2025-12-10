@@ -1,5 +1,5 @@
-export type TodoDoc={
-    isFinished:boolean;
-    task:string;
-    weight?:number;
-}
+export type TodoDoc = {
+  isFinished: boolean;
+  task: string;
+  weight?: number;
+};

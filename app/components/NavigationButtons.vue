@@ -35,18 +35,16 @@ const navigateToAnalyze = () => {
 <template>
   <div class="flex gap-2">
     <button
-      @click="navigateToRoadmap"
       :class="`w-8 h-8 rounded flex items-center justify-center transition-colors ${
         isRoadmapPage
           ? 'bg-purple-500 hover:bg-purple-600'
           : 'bg-gray-200 hover:bg-gray-300'
       }`"
       :title="'ロードマップ'"
+      @click="navigateToRoadmap"
     >
       <svg
-        :class="`w-5 h-5 ${
-          isRoadmapPage ? 'text-white' : 'text-gray-600'
-        }`"
+        :class="`w-5 h-5 ${isRoadmapPage ? 'text-white' : 'text-gray-600'}`"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -60,18 +58,16 @@ const navigateToAnalyze = () => {
       </svg>
     </button>
     <button
-      @click="navigateToAnalyze"
       :class="`w-8 h-8 rounded flex items-center justify-center transition-colors ${
         isAnalyzePage
           ? 'bg-purple-500 hover:bg-purple-600'
           : 'bg-gray-200 hover:bg-gray-300'
       }`"
       :title="'分析'"
+      @click="navigateToAnalyze"
     >
       <svg
-        :class="`w-5 h-5 ${
-          isAnalyzePage ? 'text-white' : 'text-gray-600'
-        }`"
+        :class="`w-5 h-5 ${isAnalyzePage ? 'text-white' : 'text-gray-600'}`"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -86,4 +82,3 @@ const navigateToAnalyze = () => {
     </button>
   </div>
 </template>
-

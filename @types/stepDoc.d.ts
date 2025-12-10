@@ -1,3 +1,3 @@
-export type StepDoc={
-    title:string;
-}
+export type StepDoc = {
+  title: string;
+};

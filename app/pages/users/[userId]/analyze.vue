@@ -30,12 +30,12 @@ const fetchCategoryRatios = async () => {
   try {
     loading.value = true;
     const ratios: Record<string, number> = {};
-    
+
     for (const category of categories) {
       const ratio = await getCategoryRatio(userId, category.id);
       ratios[category.id] = ratio;
     }
-    
+
     categoryRatios.value = ratios;
   } catch (error) {
     console.error("Error fetching category ratios:", error);
@@ -51,9 +51,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container mx-auto px-4 py-8 max-w-2xl">
+  <div class="container mx-auto max-w-2xl px-4 py-8">
     <!-- Header icons -->
-    <div class="flex justify-end gap-2 mb-6">
+    <div class="mb-6 flex justify-end gap-2">
       <NavigationButtons :user-id="userId" />
     </div>
 
@@ -64,4 +64,3 @@ onMounted(() => {
     <StatusSummary :category-ratios="categoryRatios" :loading="loading" />
   </div>
 </template>
-

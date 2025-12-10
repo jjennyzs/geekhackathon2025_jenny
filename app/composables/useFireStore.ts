@@ -146,8 +146,9 @@ export const useFireStore = () => {
       }));
 
       return todos;
-    } catch (error) {
+    } catch (e) {
       // todoコレクションが存在しない場合は空配列を返す
+      console.error(e);
       return [];
     }
   };
@@ -233,12 +234,10 @@ export const useFireStore = () => {
           );
 
           // ステップ配下のtodoを取得
-          const todos: TodoWithId[] = await getTodos(
-            uid,
-            categoryId,
-            goalId,
-            [...parentPath, stepId],
-          );
+          const todos: TodoWithId[] = await getTodos(uid, categoryId, goalId, [
+            ...parentPath,
+            stepId,
+          ]);
 
           return {
             id: stepId,
@@ -356,7 +355,12 @@ export const useFireStore = () => {
           );
 
           // goalId配下のtodoを取得
-          const todos: TodoWithId[] = await getTodos(uid, categoryId, goalId, []);
+          const todos: TodoWithId[] = await getTodos(
+            uid,
+            categoryId,
+            goalId,
+            [],
+          );
 
           return {
             id: goalId,
@@ -564,10 +568,10 @@ export const useFireStore = () => {
       }
 
       const docRef = await addDoc(todosRef, cleanTodoData);
-      
+
       // カテゴリ達成率を再計算
       await updateCategoryRatio(uid, categoryId);
-      
+
       return docRef.id;
     } catch (error) {
       console.error("Error adding todo:", error);
@@ -658,22 +662,22 @@ export const useFireStore = () => {
       allSegments.push("todo", todoId);
 
       const todoRef = doc(db, ...(allSegments as [string, ...string[]]));
-      
+
       // 削除前に存在確認
       const todoSnap = await getDoc(todoRef);
       if (!todoSnap.exists()) {
         console.warn("Todo does not exist, may have already been deleted");
         return;
       }
-      
+
       await deleteDoc(todoRef);
-      
+
       // 削除後の確認
       const verifySnap = await getDoc(todoRef);
       if (verifySnap.exists()) {
         throw new Error("Failed to delete todo");
       }
-      
+
       // カテゴリ達成率を再計算
       await updateCategoryRatio(uid, categoryId);
     } catch (error) {
@@ -763,7 +767,7 @@ export const useFireStore = () => {
         goalId,
       );
       await deleteDoc(goalRef);
-      
+
       // カテゴリの達成率も更新
       await updateCategoryRatio(uid, categoryId);
     } catch (error) {
@@ -797,34 +801,24 @@ export const useFireStore = () => {
 
       if (goalsSnap.empty) {
         // 目標がない場合は達成率を0にする
-        const categoryRef = doc(
-          db,
-          "users",
-          uid,
-          "category",
-          categoryId,
-        );
-        await setDoc(
-          categoryRef,
-          { achieveMentRatio: 0 },
-          { merge: true },
-        );
+        const categoryRef = doc(db, "users", uid, "category", categoryId);
+        await setDoc(categoryRef, { achieveMentRatio: 0 }, { merge: true });
         return;
       }
 
       // カテゴリ内のすべてのtodoを集計
       const allTodos: TodoWithId[] = [];
-      
+
       for (const goalDoc of goalsSnap.docs) {
         const goalId = goalDoc.id;
-        
+
         // goal直下のtodoを取得
         const goalTodos = await getTodos(uid, categoryId, goalId, []);
         allTodos.push(...goalTodos);
-        
+
         // すべてのstep階層を取得
         const steps = await getStepsRecursively(uid, categoryId, goalId);
-        
+
         // step階層からすべてのtodoを集計
         const stepTodos = collectAllTodosFromSteps(steps);
         allTodos.push(...stepTodos);
@@ -833,19 +827,17 @@ export const useFireStore = () => {
       // todoがない場合は達成率を0にする
       if (allTodos.length === 0) {
         const categoryRef = doc(db, "users", uid, "category", categoryId);
-        await setDoc(
-          categoryRef,
-          { achieveMentRatio: 0 },
-          { merge: true },
-        );
+        await setDoc(categoryRef, { achieveMentRatio: 0 }, { merge: true });
         return;
       }
 
       // 達成したtodoの数をカウント
       const completedTodos = allTodos.filter((todo) => todo.isFinished).length;
-      
+
       // 達成率を計算（todoのうち達成した割合）
-      const categoryRatio = Math.round((completedTodos / allTodos.length) * 100);
+      const categoryRatio = Math.round(
+        (completedTodos / allTodos.length) * 100,
+      );
 
       // カテゴリの達成率を更新
       const categoryRef = doc(db, "users", uid, "category", categoryId);
@@ -873,12 +865,12 @@ export const useFireStore = () => {
     try {
       const categoryRef = doc(db, "users", uid, "category", categoryId);
       const categorySnap = await getDoc(categoryRef);
-      
+
       if (categorySnap.exists()) {
         const categoryData = categorySnap.data() as CategoryDoc;
         return categoryData.achieveMentRatio || 0;
       }
-      
+
       // カテゴリが存在しない場合は0を返す
       return 0;
     } catch (error) {
@@ -890,7 +882,9 @@ export const useFireStore = () => {
   /**
    * ステップ階層からすべてのtodoを集計する再帰関数
    */
-  const collectAllTodosFromSteps = (steps: StepWithChildren[]): TodoWithId[] => {
+  const collectAllTodosFromSteps = (
+    steps: StepWithChildren[],
+  ): TodoWithId[] => {
     const allTodos: TodoWithId[] = [];
     for (const step of steps) {
       if (step.todos) {
@@ -924,7 +918,7 @@ export const useFireStore = () => {
 
       // すべてのstep階層を取得（既にtodoも含まれている）
       const steps = await getStepsRecursively(uid, categoryId, goalId);
-      
+
       // step階層からすべてのtodoを集計
       const stepTodos = collectAllTodosFromSteps(steps);
       allTodos.push(...stepTodos);

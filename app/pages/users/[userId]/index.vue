@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import type { TodoDoc } from "../../../../@types/todoDoc";
 import GoalCard from "~/components/GoalCard.vue";
 import NavigationButtons from "~/components/NavigationButtons.vue";
-import { useRoute } from "vue-router";
 import { useFireStore } from "~/composables/useFireStore";
-import type { TodoDoc } from "../../../../@types/todoDoc";
 
 // ルートパラメータからuserIdを取得
 const route = useRoute();
@@ -103,7 +103,7 @@ const fetchRoadmapData = async () => {
     const data = await getAllGoalsWithSteps(userId, selectedCategoryId.value);
     // 新しい配列を作成してリアクティビティを確実にトリガー
     goals.value = [...data];
-    
+
     // カテゴリ達成率を取得
     const ratio = await getCategoryRatio(userId, selectedCategoryId.value);
     categoryRatio.value = ratio;
@@ -199,7 +199,13 @@ const handleDeleteStep = async (
   }
 
   try {
-    await deleteStep(userId, selectedCategoryId.value, goalId, stepId, stepPath);
+    await deleteStep(
+      userId,
+      selectedCategoryId.value,
+      goalId,
+      stepId,
+      stepPath,
+    );
     await fetchRoadmapData();
   } catch (err: any) {
     console.error("Error deleting step:", err);
@@ -310,9 +316,14 @@ const saveGoal = async () => {
     saving.value = true;
     if (editingGoal.value?.goalId) {
       // 更新
-      await updateGoal(userId, selectedCategoryId.value, editingGoal.value.goalId, {
-        title: goalTitle.value,
-      });
+      await updateGoal(
+        userId,
+        selectedCategoryId.value,
+        editingGoal.value.goalId,
+        {
+          title: goalTitle.value,
+        },
+      );
     } else {
       // 追加
       await addGoal(userId, selectedCategoryId.value, {
@@ -332,7 +343,11 @@ const saveGoal = async () => {
 
 // 目標を削除
 const handleDeleteGoal = async (goalId: string) => {
-  if (!confirm("この目標を削除しますか？目標配下のすべてのステップとタスクも削除されます。")) {
+  if (
+    !confirm(
+      "この目標を削除しますか？目標配下のすべてのステップとタスクも削除されます。",
+    )
+  ) {
     return;
   }
 
@@ -428,8 +443,14 @@ const handleDeleteTodo = async (
   }
 
   try {
-    await deleteTodo(userId, selectedCategoryId.value, goalId, todoId, stepPath);
-    
+    await deleteTodo(
+      userId,
+      selectedCategoryId.value,
+      goalId,
+      todoId,
+      stepPath,
+    );
+
     // UIから直接削除（即座に反映）
     const goal = goals.value.find((g) => g.id === goalId);
     if (goal) {
@@ -448,7 +469,10 @@ const handleDeleteTodo = async (
         }
       } else {
         // Step配下のtodoを再帰的に検索して削除
-        const removeTodoFromSteps = (steps: StepWithChildren[], path: string[]): boolean => {
+        const removeTodoFromSteps = (
+          steps: StepWithChildren[],
+          path: string[],
+        ): boolean => {
           if (path.length === 0) {
             console.warn("Empty path when trying to remove todo from steps");
             return false;
@@ -469,7 +493,11 @@ const handleDeleteTodo = async (
                 }
                 return true;
               } else {
-                console.warn("Todo not found in step todos:", todoId, step.title);
+                console.warn(
+                  "Todo not found in step todos:",
+                  todoId,
+                  step.title,
+                );
               }
             } else {
               console.warn("Step has no todos:", step.title);
@@ -487,12 +515,13 @@ const handleDeleteTodo = async (
     } else {
       console.warn("Goal not found:", goalId);
     }
-    
+
     // バックグラウンドでデータを再取得（確実にFirestoreと同期）
     setTimeout(async () => {
       try {
         await fetchRoadmapData();
-      } catch (err) {
+      } catch (e) {
+        console.error(e);
       }
     }, 500);
   } catch (err: any) {
@@ -506,13 +535,13 @@ const handleDeleteTodo = async (
 
 <template>
   <div class="container mx-auto px-4 py-8">
-    <div class="flex items-center justify-between mb-6">
+    <div class="mb-6 flex items-center justify-between">
       <h1 class="text-3xl font-bold">ロードマップ</h1>
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-4">
           <button
+            class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
             @click="() => openGoalModal()"
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             + 目標を追加
           </button>
@@ -527,12 +556,12 @@ const handleDeleteTodo = async (
         <button
           v-for="category in categories"
           :key="category.id"
-          @click="changeCategory(category.id)"
           :class="`py-4 px-1 border-b-2 font-medium text-sm ${
             selectedCategoryId === category.id
               ? 'border-blue-500 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           }`"
+          @click="changeCategory(category.id)"
         >
           {{ category.label }}
         </button>
@@ -540,20 +569,28 @@ const handleDeleteTodo = async (
     </div>
 
     <!-- カテゴリ達成率表示 -->
-    <div v-if="!loading && !error" class="mb-8 p-4 bg-blue-100 rounded-lg shadow-sm">
+    <div
+      v-if="!loading && !error"
+      class="mb-8 rounded-lg bg-blue-100 p-4 shadow-sm"
+    >
       <h2 class="text-xl font-bold text-blue-800">
         カテゴリ達成率: {{ categoryRatio }}%
       </h2>
     </div>
 
     <!-- ローディング状態 -->
-    <div v-if="loading" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    <div v-if="loading" class="py-12 text-center">
+      <div
+        class="inline-block size-8 animate-spin rounded-full border-b-2 border-gray-900"
+      ></div>
       <p class="mt-4 text-gray-600">読み込み中...</p>
     </div>
 
     <!-- エラー状態 -->
-    <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+    <div
+      v-else-if="error"
+      class="rounded border border-red-200 bg-red-50 px-4 py-3 text-red-700"
+    >
       <p class="font-semibold">エラーが発生しました</p>
       <p>{{ error }}</p>
     </div>
@@ -569,57 +606,103 @@ const handleDeleteTodo = async (
         @delete-goal="handleDeleteGoal"
         @add-step="(goalId: string) => openStepModal(goalId)"
         @add-todo="(goalId: string) => openTodoModal(goalId)"
-        @edit-todo="(goalId: string, todoId: string, task: string, isFinished: boolean, weight?: number) => openTodoModal(goalId, [], todoId, task, isFinished, weight)"
-        @delete-todo="(goalId: string, todoId: string) => handleDeleteTodo(goalId, todoId, [])"
-        @toggle-todo="(goalId: string, todoId: string, currentStatus: boolean) => { toggleTodoCompletion(goalId, todoId, [], currentStatus); }"
-        @edit-step="(goalId: string, stepPath: string[], stepId: string, title: string) => openStepModal(goalId, stepPath, stepId, title)"
-        @delete-step="(goalId: string, stepPath: string[], stepId: string) => handleDeleteStep(goalId, stepId, stepPath)"
-        @add-sub-step="(goalId: string, stepPath: string[]) => openStepModal(goalId, stepPath)"
-        @add-todo-to-step="(goalId: string, stepPath: string[]) => openTodoModal(goalId, stepPath)"
-        @edit-todo-in-step="(goalId: string, stepPath: string[], todoId: string, task: string, isFinished: boolean, weight?: number) => openTodoModal(goalId, stepPath, todoId, task, isFinished, weight)"
-        @delete-todo-in-step="(goalId: string, stepPath: string[], todoId: string) => handleDeleteTodo(goalId, todoId, stepPath)"
-        @toggle-todo-in-step="(goalId: string, stepPath: string[], todoId: string, currentStatus: boolean) => toggleTodoCompletion(goalId, todoId, stepPath, currentStatus)"
+        @edit-todo="
+          (
+            goalId: string,
+            todoId: string,
+            task: string,
+            isFinished: boolean,
+            weight?: number,
+          ) => openTodoModal(goalId, [], todoId, task, isFinished, weight)
+        "
+        @delete-todo="
+          (goalId: string, todoId: string) =>
+            handleDeleteTodo(goalId, todoId, [])
+        "
+        @toggle-todo="
+          (goalId: string, todoId: string, currentStatus: boolean) => {
+            toggleTodoCompletion(goalId, todoId, [], currentStatus);
+          }
+        "
+        @edit-step="
+          (goalId: string, stepPath: string[], stepId: string, title: string) =>
+            openStepModal(goalId, stepPath, stepId, title)
+        "
+        @delete-step="
+          (goalId: string, stepPath: string[], stepId: string) =>
+            handleDeleteStep(goalId, stepId, stepPath)
+        "
+        @add-sub-step="
+          (goalId: string, stepPath: string[]) =>
+            openStepModal(goalId, stepPath)
+        "
+        @add-todo-to-step="
+          (goalId: string, stepPath: string[]) =>
+            openTodoModal(goalId, stepPath)
+        "
+        @edit-todo-in-step="
+          (
+            goalId: string,
+            stepPath: string[],
+            todoId: string,
+            task: string,
+            isFinished: boolean,
+            weight?: number,
+          ) => openTodoModal(goalId, stepPath, todoId, task, isFinished, weight)
+        "
+        @delete-todo-in-step="
+          (goalId: string, stepPath: string[], todoId: string) =>
+            handleDeleteTodo(goalId, todoId, stepPath)
+        "
+        @toggle-todo-in-step="
+          (
+            goalId: string,
+            stepPath: string[],
+            todoId: string,
+            currentStatus: boolean,
+          ) => toggleTodoCompletion(goalId, todoId, stepPath, currentStatus)
+        "
       />
     </div>
 
     <!-- データなし状態 -->
-    <div v-else class="text-center py-12">
+    <div v-else class="py-12 text-center">
       <p class="text-gray-600">ロードマップデータがありません</p>
     </div>
 
     <!-- ステップ追加・編集モーダル -->
     <div
       v-if="showStepModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
       @click.self="closeStepModal"
     >
-      <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 class="text-xl font-bold mb-4">
+      <div class="w-full max-w-md rounded-lg bg-white p-6">
+        <h2 class="mb-4 text-xl font-bold">
           {{ editingStep?.stepId ? "ステップを編集" : "ステップを追加" }}
         </h2>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="mb-2 block text-sm font-medium text-gray-700">
             タイトル
           </label>
           <input
             v-model="stepTitle"
             type="text"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="ステップのタイトルを入力"
           />
         </div>
-        <div class="flex gap-3 justify-end">
+        <div class="flex justify-end gap-3">
           <button
-            @click="closeStepModal"
-            class="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+            class="rounded bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
             :disabled="saving"
+            @click="closeStepModal"
           >
             キャンセル
           </button>
           <button
-            @click="saveStep"
-            class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+            class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
             :disabled="saving || !stepTitle.trim()"
+            @click="saveStep"
           >
             {{ saving ? "保存中..." : "保存" }}
           </button>
@@ -630,36 +713,36 @@ const handleDeleteTodo = async (
     <!-- 目標追加・編集モーダル -->
     <div
       v-if="showGoalModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
       @click.self="closeGoalModal"
     >
-      <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 class="text-xl font-bold mb-4">
+      <div class="w-full max-w-md rounded-lg bg-white p-6">
+        <h2 class="mb-4 text-xl font-bold">
           {{ editingGoal?.goalId ? "目標を編集" : "目標を追加" }}
         </h2>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="mb-2 block text-sm font-medium text-gray-700">
             タイトル
           </label>
           <input
             v-model="goalTitle"
             type="text"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="目標のタイトルを入力"
           />
         </div>
-        <div class="flex gap-3 justify-end">
+        <div class="flex justify-end gap-3">
           <button
-            @click="closeGoalModal"
-            class="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+            class="rounded bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
             :disabled="saving"
+            @click="closeGoalModal"
           >
             キャンセル
           </button>
           <button
-            @click="saveGoal"
-            class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+            class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
             :disabled="saving || !goalTitle.trim()"
+            @click="saveGoal"
           >
             {{ saving ? "保存中..." : "保存" }}
           </button>
@@ -670,37 +753,33 @@ const handleDeleteTodo = async (
     <!-- タスク追加・編集モーダル -->
     <div
       v-if="showTodoModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
       @click.self="closeTodoModal"
     >
-      <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 class="text-xl font-bold mb-4">
+      <div class="w-full max-w-md rounded-lg bg-white p-6">
+        <h2 class="mb-4 text-xl font-bold">
           {{ editingTodo?.todoId ? "タスクを編集" : "タスクを追加" }}
         </h2>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="mb-2 block text-sm font-medium text-gray-700">
               タスク
             </label>
             <input
               v-model="todoTask"
               type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="タスクを入力"
             />
           </div>
           <div>
             <label class="flex items-center">
-              <input
-                v-model="todoIsFinished"
-                type="checkbox"
-                class="mr-2"
-              />
+              <input v-model="todoIsFinished" type="checkbox" class="mr-2" />
               <span class="text-sm font-medium text-gray-700">完了済み</span>
             </label>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="mb-2 block text-sm font-medium text-gray-700">
               重み（オプション）
             </label>
             <input
@@ -708,23 +787,23 @@ const handleDeleteTodo = async (
               type="number"
               min="0"
               step="0.1"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="重みを入力"
             />
           </div>
         </div>
-        <div class="flex gap-3 justify-end mt-6">
+        <div class="mt-6 flex justify-end gap-3">
           <button
-            @click="closeTodoModal"
-            class="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+            class="rounded bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
             :disabled="saving"
+            @click="closeTodoModal"
           >
             キャンセル
           </button>
           <button
-            @click="saveTodo"
-            class="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600"
+            class="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
             :disabled="saving || !todoTask.trim()"
+            @click="saveTodo"
           >
             {{ saving ? "保存中..." : "保存" }}
           </button>
@@ -734,14 +813,14 @@ const handleDeleteTodo = async (
   </div>
 </template>
 
-
 <style scoped>
 .goal-card {
   transition: box-shadow 0.2s;
 }
 
 .goal-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 

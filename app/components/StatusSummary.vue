@@ -16,33 +16,32 @@ const categories = [
 
 <template>
   <div>
-    <h2 class="text-xl font-semibold text-gray-800 mb-4">Status Summary</h2>
-    <div v-if="loading" class="text-center py-8">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    <h2 class="mb-4 text-xl font-semibold text-gray-800">Status Summary</h2>
+    <div v-if="props.loading" class="py-8 text-center">
+      <div
+        class="inline-block size-8 animate-spin rounded-full border-b-2 border-gray-900"
+      ></div>
       <p class="mt-4 text-gray-600">読み込み中...</p>
     </div>
     <div v-else class="grid grid-cols-2 gap-4">
       <div
         v-for="category in categories"
         :key="category.id"
-        class="bg-white rounded-lg p-6 shadow-sm border border-gray-100"
+        class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm"
       >
         <div class="flex items-center gap-4">
-          <div
-            class="flex-shrink-0"
-            :style="{ color: category.color }"
-          >
+          <div class="shrink-0" :style="{ color: category.color }">
             <div class="text-4xl">{{ category.icon }}</div>
           </div>
           <div class="flex-1">
             <h3
-              class="text-base font-medium mb-1"
+              class="mb-1 text-base font-medium"
               :style="{ color: category.color }"
             >
               {{ category.label }}
             </h3>
             <p class="text-3xl font-bold text-gray-800">
-              {{ categoryRatios[category.id] || 0 }}%
+              {{ props.categoryRatios[category.id] || 0 }}%
             </p>
           </div>
         </div>
@@ -50,4 +49,3 @@ const categories = [
     </div>
   </div>
 </template>
-
