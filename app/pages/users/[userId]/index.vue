@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import GoalCard from "~/components/GoalCard.vue";
+import NavigationButtons from "~/components/NavigationButtons.vue";
 import { useRoute } from "vue-router";
 import { useFireStore } from "~/composables/useFireStore";
 import type { TodoDoc } from "../../../../@types/todoDoc";
@@ -507,12 +508,17 @@ const handleDeleteTodo = async (
   <div class="container mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-3xl font-bold">ロードマップ</h1>
-      <button
-        @click="() => openGoalModal()"
-        class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        + 目標を追加
-      </button>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4">
+          <button
+            @click="() => openGoalModal()"
+            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            + 目標を追加
+          </button>
+          <NavigationButtons :user-id="userId" />
+        </div>
+      </div>
     </div>
 
     <!-- カテゴリタブ -->
