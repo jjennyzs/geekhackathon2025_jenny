@@ -3,11 +3,15 @@ import {
   getDoc,
   collection,
   getDocs,
+  addDoc,
+  setDoc,
+  deleteDoc,
   type Firestore,
 } from "firebase/firestore";
 import type { Goal } from "../../@types/goal";
 import type { StepDoc } from "../../@types/stepDoc";
 import type { TodoDoc } from "../../@types/todoDoc";
+import type { CategoryDoc } from "../../@types/categoryDoc";
 
 export const useFireStore = () => {
   const { $db } = useNuxtApp();
@@ -351,10 +355,14 @@ export const useFireStore = () => {
             goalId,
           );
 
+          // goalId配下のtodoを取得
+          const todos: TodoWithId[] = await getTodos(uid, categoryId, goalId, []);
+
           return {
             id: goalId,
             ...goalData,
             steps,
+            todos: todos.length > 0 ? todos : undefined,
           };
         }),
       );
@@ -366,10 +374,538 @@ export const useFireStore = () => {
     }
   };
 
+  /**
+   * ステップを追加する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   * @param stepData - ステップデータ
+   * @param stepPath - 親ステップのパス（空の場合はgoalId配下に追加）
+   * @returns 追加されたステップのID
+   */
+  const addStep = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+    stepData: StepDoc,
+    stepPath: string[] = [],
+  ): Promise<string> => {
+    try {
+      let stepsRef;
+      if (stepPath.length === 0) {
+        // goalId配下にステップを追加
+        stepsRef = collection(
+          db,
+          "users",
+          uid,
+          "category",
+          categoryId,
+          "goals",
+          goalId,
+          "steps",
+        );
+      } else {
+        // stepId配下にステップを追加
+        const allSegments: any[] = [
+          "users",
+          uid,
+          "category",
+          categoryId,
+          "goals",
+          goalId,
+        ];
+        for (const stepId of stepPath) {
+          allSegments.push("steps", stepId);
+        }
+        allSegments.push("steps");
+        stepsRef = collection(db, ...(allSegments as [string, ...string[]]));
+      }
+
+      const docRef = await addDoc(stepsRef, stepData);
+      return docRef.id;
+    } catch (error) {
+      console.error("Error adding step:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * ステップを更新する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   * @param stepId - ステップID
+   * @param stepData - 更新するステップデータ
+   * @param stepPath - 親ステップのパス（空の場合はgoalId配下のステップ）
+   */
+  const updateStep = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+    stepId: string,
+    stepData: Partial<StepDoc>,
+    stepPath: string[] = [],
+  ): Promise<void> => {
+    try {
+      const allSegments: any[] = [
+        "users",
+        uid,
+        "category",
+        categoryId,
+        "goals",
+        goalId,
+      ];
+
+      for (const parentStepId of stepPath) {
+        allSegments.push("steps", parentStepId);
+      }
+      allSegments.push("steps", stepId);
+
+      const stepRef = doc(db, ...(allSegments as [string, ...string[]]));
+      await setDoc(stepRef, stepData, { merge: true });
+    } catch (error) {
+      console.error("Error updating step:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * ステップを削除する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   * @param stepId - ステップID
+   * @param stepPath - 親ステップのパス（空の場合はgoalId配下のステップ）
+   */
+  const deleteStep = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+    stepId: string,
+    stepPath: string[] = [],
+  ): Promise<void> => {
+    try {
+      const allSegments: any[] = [
+        "users",
+        uid,
+        "category",
+        categoryId,
+        "goals",
+        goalId,
+      ];
+
+      for (const parentStepId of stepPath) {
+        allSegments.push("steps", parentStepId);
+      }
+      allSegments.push("steps", stepId);
+
+      const stepRef = doc(db, ...(allSegments as [string, ...string[]]));
+      await deleteDoc(stepRef);
+    } catch (error) {
+      console.error("Error deleting step:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * タスク（todo）を追加する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   * @param todoData - タスクデータ
+   * @param stepPath - ステップのパス（空の場合はgoalId配下に追加）
+   * @returns 追加されたタスクのID
+   */
+  const addTodo = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+    todoData: TodoDoc,
+    stepPath: string[] = [],
+  ): Promise<string> => {
+    try {
+      let todosRef;
+      if (stepPath.length === 0) {
+        // goalId配下にタスクを追加
+        todosRef = collection(
+          db,
+          "users",
+          uid,
+          "category",
+          categoryId,
+          "goals",
+          goalId,
+          "todo",
+        );
+      } else {
+        // stepId配下にタスクを追加
+        const allSegments: any[] = [
+          "users",
+          uid,
+          "category",
+          categoryId,
+          "goals",
+          goalId,
+        ];
+        for (const stepId of stepPath) {
+          allSegments.push("steps", stepId);
+        }
+        allSegments.push("todo");
+        todosRef = collection(db, ...(allSegments as [string, ...string[]]));
+      }
+
+      // undefinedのフィールドを除外
+      const cleanTodoData: Record<string, any> = {
+        task: todoData.task,
+        isFinished: todoData.isFinished,
+      };
+      if (todoData.weight !== undefined) {
+        cleanTodoData.weight = todoData.weight;
+      }
+
+      const docRef = await addDoc(todosRef, cleanTodoData);
+      return docRef.id;
+    } catch (error) {
+      console.error("Error adding todo:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * タスク（todo）を更新する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   * @param todoId - タスクID
+   * @param todoData - 更新するタスクデータ
+   * @param stepPath - ステップのパス（空の場合はgoalId配下のタスク）
+   */
+  const updateTodo = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+    todoId: string,
+    todoData: Partial<TodoDoc>,
+    stepPath: string[] = [],
+  ): Promise<void> => {
+    try {
+      const allSegments: any[] = [
+        "users",
+        uid,
+        "category",
+        categoryId,
+        "goals",
+        goalId,
+      ];
+
+      for (const stepId of stepPath) {
+        allSegments.push("steps", stepId);
+      }
+      allSegments.push("todo", todoId);
+
+      // undefinedのフィールドを除外
+      const cleanTodoData: Record<string, any> = {};
+      if (todoData.task !== undefined) {
+        cleanTodoData.task = todoData.task;
+      }
+      if (todoData.isFinished !== undefined) {
+        cleanTodoData.isFinished = todoData.isFinished;
+      }
+      if (todoData.weight !== undefined) {
+        cleanTodoData.weight = todoData.weight;
+      }
+
+      const todoRef = doc(db, ...(allSegments as [string, ...string[]]));
+      await setDoc(todoRef, cleanTodoData, { merge: true });
+    } catch (error) {
+      console.error("Error updating todo:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * タスク（todo）を削除する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   * @param todoId - タスクID
+   * @param stepPath - ステップのパス（空の場合はgoalId配下のタスク）
+   */
+  const deleteTodo = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+    todoId: string,
+    stepPath: string[] = [],
+  ): Promise<void> => {
+    try {
+      const allSegments: any[] = [
+        "users",
+        uid,
+        "category",
+        categoryId,
+        "goals",
+        goalId,
+      ];
+
+      for (const stepId of stepPath) {
+        allSegments.push("steps", stepId);
+      }
+      allSegments.push("todo", todoId);
+
+      const todoRef = doc(db, ...(allSegments as [string, ...string[]]));
+      
+      // 削除前に存在確認
+      const todoSnap = await getDoc(todoRef);
+      if (!todoSnap.exists()) {
+        console.warn("Todo does not exist, may have already been deleted");
+        return;
+      }
+      
+      await deleteDoc(todoRef);
+      
+      // 削除後の確認
+      const verifySnap = await getDoc(todoRef);
+      if (verifySnap.exists()) {
+        throw new Error("Failed to delete todo");
+      }
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * 目標（goal）を追加する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalData - 目標データ
+   * @returns 追加された目標のID
+   */
+  const addGoal = async (
+    uid: string,
+    categoryId: string,
+    goalData: Goal,
+  ): Promise<string> => {
+    try {
+      const goalsRef = collection(
+        db,
+        "users",
+        uid,
+        "category",
+        categoryId,
+        "goals",
+      );
+      const docRef = await addDoc(goalsRef, goalData);
+      return docRef.id;
+    } catch (error) {
+      console.error("Error adding goal:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * 目標（goal）を更新する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   * @param goalData - 更新する目標データ
+   */
+  const updateGoal = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+    goalData: Partial<Goal>,
+  ): Promise<void> => {
+    try {
+      const goalRef = doc(
+        db,
+        "users",
+        uid,
+        "category",
+        categoryId,
+        "goals",
+        goalId,
+      );
+      await setDoc(goalRef, goalData, { merge: true });
+    } catch (error) {
+      console.error("Error updating goal:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * 目標（goal）を削除する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   */
+  const deleteGoal = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+  ): Promise<void> => {
+    try {
+      const goalRef = doc(
+        db,
+        "users",
+        uid,
+        "category",
+        categoryId,
+        "goals",
+        goalId,
+      );
+      await deleteDoc(goalRef);
+      
+      // カテゴリの達成率も更新
+      await updateCategoryRatio(uid, categoryId);
+    } catch (error) {
+      console.error("Error deleting goal:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * カテゴリの達成率を更新する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   */
+  const updateCategoryRatio = async (
+    uid: string,
+    categoryId: string,
+  ): Promise<void> => {
+    try {
+      // カテゴリ内のすべての目標を取得
+      const goalsRef = collection(
+        db,
+        "users",
+        uid,
+        "category",
+        categoryId,
+        "goals",
+      );
+      const goalsSnap = await getDocs(goalsRef);
+
+      if (goalsSnap.empty) {
+        // 目標がない場合は達成率を0にする
+        const categoryRef = doc(
+          db,
+          "users",
+          uid,
+          "category",
+          categoryId,
+        );
+        await setDoc(
+          categoryRef,
+          { achieveMentRatio: 0 },
+          { merge: true },
+        );
+        return;
+      }
+
+      // 各目標の達成率の平均を計算
+      let totalRatio = 0;
+      goalsSnap.docs.forEach((goalDoc) => {
+        const goalData = goalDoc.data() as Goal;
+        totalRatio += goalData.ratio || 0;
+      });
+
+      const averageRatio = Math.round(totalRatio / goalsSnap.docs.length);
+
+      // カテゴリの達成率を更新
+      const categoryRef = doc(db, "users", uid, "category", categoryId);
+      await setDoc(
+        categoryRef,
+        { achieveMentRatio: averageRatio },
+        { merge: true },
+      );
+    } catch (error) {
+      console.error("Error updating category ratio:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * ステップ階層からすべてのtodoを集計する再帰関数
+   */
+  const collectAllTodosFromSteps = (steps: StepWithChildren[]): TodoWithId[] => {
+    const allTodos: TodoWithId[] = [];
+    for (const step of steps) {
+      if (step.todos) {
+        allTodos.push(...step.todos);
+      }
+      if (step.steps.length > 0) {
+        allTodos.push(...collectAllTodosFromSteps(step.steps));
+      }
+    }
+    return allTodos;
+  };
+
+  /**
+   * 目標（goal）の達成率を計算して更新する関数
+   * @param uid - ユーザーID
+   * @param categoryId - カテゴリID
+   * @param goalId - 目標ID
+   */
+  const calculateAndUpdateGoalRatio = async (
+    uid: string,
+    categoryId: string,
+    goalId: string,
+  ): Promise<number> => {
+    try {
+      // 目標配下のすべてのtodoを取得（goal直下 + すべてのstep配下）
+      const allTodos: TodoWithId[] = [];
+
+      // goal直下のtodo
+      const goalTodos = await getTodos(uid, categoryId, goalId, []);
+      allTodos.push(...goalTodos);
+
+      // すべてのstep階層を取得（既にtodoも含まれている）
+      const steps = await getStepsRecursively(uid, categoryId, goalId);
+      
+      // step階層からすべてのtodoを集計
+      const stepTodos = collectAllTodosFromSteps(steps);
+      allTodos.push(...stepTodos);
+
+      // 達成率を計算
+      const totalTodos = allTodos.length;
+      if (totalTodos === 0) {
+        // todoがない場合は達成率を0にする
+        await updateGoal(uid, categoryId, goalId, { ratio: 0 });
+        return 0;
+      }
+
+      const completedTodos = allTodos.filter((todo) => todo.isFinished).length;
+      const ratio = Math.round((completedTodos / totalTodos) * 100);
+
+      // 目標の達成率を更新
+      await updateGoal(uid, categoryId, goalId, { ratio });
+
+      // カテゴリの達成率も更新
+      await updateCategoryRatio(uid, categoryId);
+
+      return ratio;
+    } catch (error) {
+      console.error("Error calculating goal ratio:", error);
+      throw error;
+    }
+  };
+
   return {
     getGoalWithSteps,
     getStepsRecursively,
     getGoalWithAllSteps,
     getAllGoalsWithSteps,
+    addStep,
+    updateStep,
+    deleteStep,
+    addTodo,
+    updateTodo,
+    deleteTodo,
+    addGoal,
+    updateGoal,
+    deleteGoal,
+    calculateAndUpdateGoalRatio,
+    updateCategoryRatio,
   };
 };
