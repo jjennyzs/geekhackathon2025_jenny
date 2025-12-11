@@ -1,32 +1,42 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import admin from 'firebase-admin';
+import { setGlobalOptions } from 'firebase-functions/v2';
+import serviceAccount from '../config/serviceAccountKey.json';
 
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
-import * as logger from "firebase-functions/logger";
-
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
-
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({maxInstances: 10});
-
-export const helloWorld = onRequest((request, response) => {
-  logger.info("Hello logs!", {structuredData: true});
-  response.send("Hello from Firebase!");
+// firebase-adminを初期化
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
 });
+
+setGlobalOptions({ region: 'asia-northeast1' });
+
+process.env.TZ = 'Asia/Tokyo';
+
+interface FunctionsObj {
+  [key: string]: string;
+}
+
+// ここに定義を追加していく
+const funcs = {
+  // API
+  api_fireStore_exportJson: './api/fireStore/exportJson',
+};
+
+const loadFunctions = (functionsObj: FunctionsObj) => {
+  for (const functionName in functionsObj) {
+    if (
+      !process.env.FUNCTION_NAME ||
+      process.env.FUNCTION_NAME.startsWith(functionName)
+    ) {
+      const importedModule = require(functionsObj[functionName]);
+      // ES modulesのexport形式に対応（exportJsonなど名前付きエクスポート）
+      if (importedModule.exportJson) {
+        module.exports[functionName] = importedModule.exportJson;
+      } else {
+        // CommonJS形式の場合（default exportなど）
+        module.exports[functionName] = importedModule;
+      }
+    }
+  }
+};
+
+loadFunctions(funcs);
