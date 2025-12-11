@@ -45,7 +45,7 @@ const drawRadarChart = () => {
 
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
-  const radius = Math.min(canvas.width, canvas.height) / 2 - 40;
+  const radius = Math.min(canvas.width, canvas.height) / 2 - 50;
   const numAxes = chartData.value.data.length;
   const angleStep = (2 * Math.PI) / numAxes;
 
@@ -155,7 +155,7 @@ watch(
       drawRadarChart();
     }, 100);
   },
-  { deep: true },
+  { deep: true }
 );
 </script>
 
