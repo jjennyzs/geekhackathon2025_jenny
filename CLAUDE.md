@@ -50,7 +50,7 @@ app/
   ├── composables/      # Reusable composition functions
   │   └── useFireStore.ts  # Main Firestore data operations
   ├── pages/           # File-based routing
-  │   ├── index.vue    # Root page
+  │   ├── index.vue    # Root page (redirects to login page)
   │   ├── login.vue    # Authentication page
   │   ├── sample.vue   # Sample/demo page
   │   └── users/[userId]/
