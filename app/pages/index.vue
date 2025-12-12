@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router";
+import { navigateTo } from "#app";
 
-const router = useRouter();
+
 
 // ページ読み込み時に自動でログインページに遷移
-router.push("/login");
+await navigateTo("/login", { replace: true });
 </script>
 
 <template>
