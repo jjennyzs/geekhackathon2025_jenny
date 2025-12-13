@@ -175,7 +175,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         onDeleteTodo,
         onToggleTodo,
       } = props;
-      const indent = level * 24;
+      const indent = level * 12;
       const currentStepPath = [...stepPath, step.id];
 
       return h(
@@ -421,82 +421,100 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
     <div class="goal-header mb-4 border-b pb-4">
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">
-            {{ props.goal.title }}
-          </h2>
-          <div class="mt-2">
-            <span class="text-sm text-gray-600">達成率: </span>
-            <span class="font-semibold">{{ props.goal.ratio }}%</span>
-          </div>
+  <h2 class="text-2xl font-bold text-gray-900">
+    {{ props.goal.title }}
+  </h2>
+
+  <div class="mt-2">
+    <div class="flex items-center gap-3">
+      <!-- 進捗バー -->
+      <div class="flex-1">
+        <div class="w-full bg-gray-200 rounded h-3">
+          <div
+            class="h-3 bg-blue-500 rounded transition-all duration-300"
+            :style="{ width: props.goal.ratio + '%' }"
+          />
         </div>
+      </div>
+
+      <!-- 進捗率 -->
+      <span class="text-sm font-semibold whitespace-nowrap">
+        {{ props.goal.ratio }}%
+      </span>
+    </div>
+  </div>
+</div>
+
         <div class="flex gap-2">
           <button
-            class="rounded bg-yellow-500 px-3 py-1 text-sm text-white hover:bg-yellow-600"
-            @click="$emit('edit-goal', props.goal.id, props.goal.title)"
-          >
-            編集
-          </button>
-          <button
-            class="rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
+            class="p-2 hover:bg-gray-100 rounded"
             :disabled="saving"
-            @click="$emit('delete-goal', props.goal.id)"
-          >
-            削除
+            @click="$emit('edit-goal', props.goal.id, props.goal.title)">
+          <img
+            src="../icons/edit.svg"
+            alt="編集"
+            class="h-5 w-5"
+          /> 
+          </button> 
+          <button
+            class="p-2 hover:bg-gray-100 rounded"
+            :disabled="saving"
+            @click="$emit('delete-goal', props.goal.id, props.goal.title)">
+          <img
+            src="../icons/delete.svg"
+            alt="削除"
+            class="h-5 w-5"
+          />  
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Goal配下のtodoを表示 -->
-    <div class="mb-4">
-      <div class="mb-2 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-700">TODO</h3>
-        <button
-          class="rounded bg-green-500 px-3 py-1 text-sm text-white hover:bg-green-600"
-          @click="$emit('add-todo', goal.id)"
-        >
-          + TODO追加
-        </button>
-      </div>
-      <div v-if="goal.todos && goal.todos.length > 0" class="ml-4 space-y-1">
-        <div
-          v-for="todo in goal.todos"
-          :key="todo.id"
-          :class="`text-sm px-3 py-2 rounded border-l-2 flex items-center justify-between group ${
-            todo.isFinished
-              ? 'text-gray-500 bg-gray-50 border-gray-300 line-through'
-              : 'text-gray-600 bg-blue-50 border-blue-300'
-          }`"
-        >
-          <div class="flex items-center">
-            <button
-              :class="`mr-2 px-2 py-1 text-xs rounded ${
-                todo.isFinished
-                  ? 'bg-green-500 text-white hover:bg-green-600'
-                  : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-              }`"
-              :disabled="saving"
-              @click="$emit('toggle-todo', goal.id, todo.id, todo.isFinished)"
-            >
-              {{ todo.isFinished ? "✓ 完了" : "未完了" }}
-            </button>
-            <span class="mr-2 font-semibold text-blue-700">
-              {{ todo.isFinished ? "✓ DONE: " : "TODO: " }}
-            </span>
-            <span>{{ todo.task }}</span>
-            <span
-              v-if="todo.weight !== undefined"
-              class="ml-2 text-xs text-gray-500"
-            >
-              (重み: {{ todo.weight }})
-            </span>
-          </div>
-          <div
-            class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
-          >
-            <button
-              class="rounded bg-yellow-500 px-1 py-0.5 text-xs text-white hover:bg-yellow-600"
-              @click="
+    <!-- タスク + 目標 操作ボタン（上部） -->
+<div class="mb-4 flex items-center gap-2">
+  <button
+    class="rounded bg-green-100 px-3 py-1 text-sm text-green-600 hover:bg-green-300"
+    @click="$emit('add-todo', goal.id)"
+  >
+    ✓ タスク追加
+  </button>
+  <button
+    class="rounded bg-blue-100 px-3 py-1 text-sm text-blue-600 hover:bg-blue-300"
+    @click="$emit('add-step', goal.id)"
+  >
+    + 目標追加
+  </button>
+</div>
+
+<!-- TODO一覧 -->
+<div v-if="goal.todos && goal.todos.length > 0" class="ml-2 space-y-1 border-l-4 pl-2">
+  <div
+    v-for="todo in goal.todos"
+    :key="todo.id"
+    :class="`text-sm px-3 py-2 rounded-full flex items-center justify-between group ${
+      todo.isFinished
+        ? 'text-gray-500 bg-gray-50 border-gray-300 line-through'
+        : 'text-gray-600 bg-green-50 border-green-300'
+    }`"
+  >
+    <div class="flex items-center">
+      <input
+        type="checkbox"
+        class="mr-3 h-4 w-4 cursor-pointer rounded-full accent-gray-300"
+        :checked="todo.isFinished"
+        :disabled="saving"
+        @click="$emit('toggle-todo', goal.id, todo.id, todo.isFinished)"
+      >
+    </input>
+      <span>{{ todo.task }}</span>
+      <span v-if="todo.weight !== undefined" class="ml-2 text-xs text-gray-500">
+        (重み: {{ todo.weight }})</span>
+    </div>
+    <div class="flex gap">
+          <button
+            class="p-2 hover:bg-gray-100"
+            :disabled="saving"
+            @click="
                 $emit(
                   'edit-todo',
                   goal.id,
@@ -505,103 +523,64 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                   todo.isFinished,
                   todo.weight,
                 )
-              "
-            >
-              編集
-            </button>
-            <button
-              class="rounded bg-red-500 px-1 py-0.5 text-xs text-white hover:bg-red-600"
-              @click="$emit('delete-todo', goal.id, todo.id)"
-            >
-              削除
-            </button>
+              ">
+          <img
+            src="../icons/edit.svg"
+            alt="編集"
+            class="h-4 w-4"
+          /> 
+          </button> 
+          <button
+            class="p-2 hover:bg-gray-100"
+            :disabled="saving"
+            @click="$emit('delete-todo', goal.id, todo.id)">
+          <img
+            src="../icons/delete.svg"
+            alt="削除"
+            class="h-4 w-4"
+          />  
+          </button>
           </div>
-        </div>
-      </div>
-      <p v-else class="ml-4 italic text-gray-500">TODOがありません</p>
-    </div>
+  </div>
+</div>
 
-    <div class="steps-container">
-      <div class="mb-4 flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-700">ステップ</h3>
-        <button
-          class="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
-          @click="$emit('add-step', goal.id)"
-        >
-          + ステップ追加
-        </button>
-      </div>
-      <div v-if="goal.steps && goal.steps.length > 0" class="space-y-2">
-        <component
-          :is="RoadmapStep"
-          v-for="step in goal.steps"
-          :key="step.id"
-          :step="step"
-          :level="0"
-          :goal-id="goal.id"
-          :step-path="[]"
-          :on-edit-step="
-            (
-              goalId: string,
-              stepPath: string[],
-              stepId: string,
-              title: string,
-            ) => $emit('edit-step', goalId, stepPath, stepId, title)
-          "
-          :on-delete-step="
-            (goalId: string, stepId: string, stepPath: string[]) =>
-              $emit('delete-step', goalId, stepPath, stepId)
-          "
-          :on-add-sub-step="
-            (goalId: string, stepPath: string[]) =>
-              $emit('add-sub-step', goalId, stepPath)
-          "
-          :on-add-todo="
-            (goalId: string, stepPath: string[]) =>
-              $emit('add-todo-to-step', goalId, stepPath)
-          "
-          :on-edit-todo="
-            (
-              goalId: string,
-              stepPath: string[],
-              todoId: string,
-              task: string,
-              isFinished: boolean,
-              weight?: number,
-            ) =>
-              $emit(
-                'edit-todo-in-step',
-                goalId,
-                stepPath,
-                todoId,
-                task,
-                isFinished,
-                weight,
-              )
-          "
-          :on-delete-todo="
-            (goalId: string, todoId: string, stepPath: string[]) =>
-              $emit('delete-todo-in-step', goalId, stepPath, todoId)
-          "
-          :on-toggle-todo="
-            (
-              goalId: string,
-              stepPath: string[],
-              todoId: string,
-              currentStatus: boolean,
-            ) =>
-              $emit(
-                'toggle-todo-in-step',
-                goalId,
-                stepPath,
-                todoId,
-                currentStatus,
-              )
-          "
-        />
-      </div>
-      <p v-else class="italic text-gray-500">ステップがありません</p>
-    </div>
+<!-- ステップ一覧 -->
+<div v-if="goal.steps && goal.steps.length > 0" class="mt-4 space-y-2">
+  <component
+    :is="RoadmapStep"
+    v-for="step in goal.steps"
+    :key="step.id"
+    :step="step"
+    :level="0"
+    :goal-id="goal.id"
+    :step-path="[]"
+    :on-edit-step="(g, p, id, t) => $emit('edit-step', g, p, id, t)"
+    :on-delete-step="(g, id, p) => $emit('delete-step', g, p, id)"
+    :on-add-sub-step="(g, p) => $emit('add-sub-step', g, p)"
+    :on-add-todo="(g, p) => $emit('add-todo-to-step', g, p)"
+    :on-edit-todo="(g, p, id, task, f, w) =>
+      $emit('edit-todo-in-step', g, p, id, task, f, w)"
+    :on-delete-todo="(g, id, p) =>
+      $emit('delete-todo-in-step', g, p, id)"
+    :on-toggle-todo="(g, p, id, s) =>
+      $emit('toggle-todo-in-step', g, p, id, s)"
+  />
+  <!-- ステップ追加後の下部ボタン -->
+  <div class="mt-2 flex items-center gap-2">
+    <button
+      class="rounded bg-green-100 px-3 py-1 text-sm text-green-600 hover:bg-green-300"
+      @click="$emit('add-todo', goal.id)"
+    >
+      ✓ タスク追加
+    </button>
+    <button
+      class="rounded bg-blue-100 px-3 py-1 text-sm text-blue-600 hover:bg-blue-300"
+      @click="$emit('add-step', goal.id)"
+    >
+      + 目標追加
+    </button>
+  </div>
+</div>
   </div>
 </template>
 
