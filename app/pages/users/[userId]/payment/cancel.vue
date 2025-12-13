@@ -31,7 +31,9 @@ onMounted(async () => {
     <div
       class="w-full max-w-md space-y-6 rounded-2xl bg-white p-10 text-center shadow-xl"
     >
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-400">
+      <div
+        class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-400"
+      >
         <svg
           class="h-8 w-8 text-white"
           fill="none"
@@ -46,7 +48,9 @@ onMounted(async () => {
           />
         </svg>
       </div>
-      <h1 class="text-2xl font-bold text-gray-800">決済がキャンセルされました</h1>
+      <h1 class="text-2xl font-bold text-gray-800">
+        決済がキャンセルされました
+      </h1>
       <p class="text-gray-600">
         決済がキャンセルされました。目標は編集可能なままです。
       </p>
@@ -59,4 +63,3 @@ onMounted(async () => {
     </div>
   </div>
 </template>
-

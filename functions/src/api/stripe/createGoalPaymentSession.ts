@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import {onCall} from "firebase-functions/v2/https";
+import { onCall } from "firebase-functions/v2/https";
 import Stripe from "stripe";
 
 const getDb = () => admin.firestore();
@@ -27,10 +27,10 @@ interface CreateGoalPaymentSessionRequest {
  * 目標に賭ける金額でStripe決済セッションを作成
  */
 export const createGoalPaymentSession = onCall(
-  {region: "asia-northeast1"},
+  { region: "asia-northeast1" },
   async (request) => {
     try {
-      const {userId, goalId, categoryId, amount, origin} =
+      const { userId, goalId, categoryId, amount, origin } =
         request.data as CreateGoalPaymentSessionRequest;
 
       // バリデーション
@@ -107,11 +107,10 @@ export const createGoalPaymentSession = onCall(
         betAmount: amount,
       });
 
-      return {url: session.url};
+      return { url: session.url };
     } catch (error: any) {
       console.error("Error creating payment session:", error);
       throw new Error(error.message || "Failed to create payment session");
     }
   },
 );
-

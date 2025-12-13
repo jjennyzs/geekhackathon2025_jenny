@@ -25,7 +25,7 @@ onMounted(async () => {
     // 決済を確認して目標をロック
     await verifyAndLockGoal(userId, goalId, categoryId, sessionId);
     isProcessing.value = false;
-    
+
     // 3秒後に目標一覧ページにリダイレクト
     setTimeout(() => {
       router.push(`/users/${userId}`);
@@ -45,7 +45,9 @@ onMounted(async () => {
     <div
       class="w-full max-w-md space-y-6 rounded-2xl bg-white p-10 text-center shadow-xl"
     >
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500">
+      <div
+        class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500"
+      >
         <svg
           class="h-8 w-8 text-white"
           fill="none"
@@ -61,12 +63,16 @@ onMounted(async () => {
         </svg>
       </div>
       <div v-if="isProcessing" class="space-y-4">
-        <div class="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+        <div
+          class="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"
+        ></div>
         <h1 class="text-2xl font-bold text-gray-800">決済を確認中...</h1>
         <p class="text-gray-600">目標をロックしています</p>
       </div>
       <div v-else-if="error" class="space-y-4">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500">
+        <div
+          class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-500"
+        >
           <svg
             class="h-8 w-8 text-white"
             fill="none"
@@ -89,9 +95,7 @@ onMounted(async () => {
         <p class="text-gray-600">
           目標達成への賭けが確定しました。目標は編集できなくなりました。
         </p>
-        <p class="text-sm text-gray-500">
-          3秒後に目標一覧ページに戻ります...
-        </p>
+        <p class="text-sm text-gray-500">3秒後に目標一覧ページに戻ります...</p>
       </div>
       <button
         class="w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
@@ -102,4 +106,3 @@ onMounted(async () => {
     </div>
   </div>
 </template>
-

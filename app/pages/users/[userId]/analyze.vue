@@ -62,7 +62,6 @@ onMounted(() => {
     <!-- <CurrentBalance :category-ratios="categoryRatios" /> -->
     <RadarChart />
 
-
     <!-- Status Summary Section -->
     <StatusSummary :category-ratios="categoryRatios" :loading="loading" />
   </div>

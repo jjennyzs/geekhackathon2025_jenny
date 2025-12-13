@@ -38,7 +38,7 @@ async function importStepsRecursively(
   categoryId: string,
   goalId: string,
   steps: StepWithChildren[],
-  parentPath: string[] = []
+  parentPath: string[] = [],
 ): Promise<void> {
   const db = getDb();
 
@@ -91,7 +91,7 @@ async function importGoalTodos(
   userId: string,
   categoryId: string,
   goalId: string,
-  todos: TodoWithId[]
+  todos: TodoWithId[],
 ): Promise<void> {
   const db = getDb();
   const goalRef = db
@@ -118,7 +118,7 @@ async function importGoalTodos(
 async function importGoalWithAllSteps(
   userId: string,
   categoryId: string,
-  goalData: GoalWithSteps
+  goalData: GoalWithSteps,
 ): Promise<void> {
   const db = getDb();
 
@@ -147,7 +147,7 @@ async function importGoalWithAllSteps(
       userId,
       categoryId,
       goalData.id,
-      goalData.steps
+      goalData.steps,
     );
   }
 }
@@ -183,5 +183,5 @@ export const importJson = onCall(
       console.error("JSONインポートエラー:", error);
       throw new Error(`JSONインポートに失敗しました: ${error.message}`);
     }
-  }
+  },
 );

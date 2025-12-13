@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
-import {onCall} from "firebase-functions/v2/https";
+import { onCall } from "firebase-functions/v2/https";
 import Stripe from "stripe";
-import {FieldValue} from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 
 const getDb = () => admin.firestore();
 
@@ -27,10 +27,10 @@ interface ProcessRefundForGoalRequest {
  * 25%達成ごとに賭け金の25%を返還
  */
 export const processRefundForGoal = onCall(
-  {region: "asia-northeast1"},
+  { region: "asia-northeast1" },
   async (request) => {
     try {
-      const {userId, goalId, categoryId} =
+      const { userId, goalId, categoryId } =
         request.data as ProcessRefundForGoalRequest;
 
       // バリデーション
@@ -76,12 +76,15 @@ export const processRefundForGoal = onCall(
       const refundMilestones = [25, 50, 75, 100];
       const eligibleMilestones = refundMilestones.filter(
         (milestone) =>
-          currentRatio >= milestone &&
-          !refundedPercentages.includes(milestone),
+          currentRatio >= milestone && !refundedPercentages.includes(milestone),
       );
 
       if (eligibleMilestones.length === 0) {
-        return {success: true, refunded: false, message: "No refund eligible"};
+        return {
+          success: true,
+          refunded: false,
+          message: "No refund eligible",
+        };
       }
 
       // 返金処理を実行
@@ -109,7 +112,7 @@ export const processRefundForGoal = onCall(
 
           console.log(
             `Refund processed for goal ${goalId} ` +
-            `at ${milestone}% milestone: ${refund.id}`,
+              `at ${milestone}% milestone: ${refund.id}`,
           );
         } catch (error: any) {
           console.error(
@@ -131,8 +134,7 @@ export const processRefundForGoal = onCall(
           success: true,
           refunded: true,
           refundedMilestones,
-          refundAmount:
-            refundAmount * refundedMilestones.length,
+          refundAmount: refundAmount * refundedMilestones.length,
         };
       }
 
@@ -147,4 +149,3 @@ export const processRefundForGoal = onCall(
     }
   },
 );
-

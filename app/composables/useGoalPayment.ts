@@ -52,7 +52,11 @@ export const useGoalPayment = () => {
     goalId: string,
     categoryId: string,
     sessionId: string,
-  ): Promise<{ success: boolean; locked?: boolean; alreadyLocked?: boolean }> => {
+  ): Promise<{
+    success: boolean;
+    locked?: boolean;
+    alreadyLocked?: boolean;
+  }> => {
     try {
       const verifyAndLock = httpsCallable(
         functions,
@@ -65,7 +69,11 @@ export const useGoalPayment = () => {
         sessionId,
       });
 
-      return result.data as { success: boolean; locked?: boolean; alreadyLocked?: boolean };
+      return result.data as {
+        success: boolean;
+        locked?: boolean;
+        alreadyLocked?: boolean;
+      };
     } catch (error) {
       console.error("Error verifying and locking goal:", error);
       throw error;
@@ -151,4 +159,3 @@ export const useGoalPayment = () => {
     clearPendingPayment,
   };
 };
-

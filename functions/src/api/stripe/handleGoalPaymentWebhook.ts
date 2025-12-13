@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import {onRequest} from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
 import Stripe from "stripe";
 
 // Stripeの初期化
@@ -14,7 +14,7 @@ const getDb = () => admin.firestore();
  * 決済が成功したら目標をロックする
  */
 export const handleGoalPaymentWebhook = onRequest(
-  {region: "asia-northeast1", cors: true},
+  { region: "asia-northeast1", cors: true },
   async (req, res) => {
     const sig = req.headers["stripe-signature"];
 
@@ -63,7 +63,7 @@ export const handleGoalPaymentWebhook = onRequest(
       const session = event.data.object as Stripe.Checkout.Session;
 
       // メタデータから情報を取得
-      const {userId, goalId, categoryId} = session.metadata || {};
+      const { userId, goalId, categoryId } = session.metadata || {};
 
       if (!userId || !goalId || !categoryId) {
         console.error("Missing metadata in session");
@@ -91,14 +91,13 @@ export const handleGoalPaymentWebhook = onRequest(
         console.log(
           `Goal ${goalId} locked after successful payment for user ${userId}`,
         );
-        res.status(200).send({received: true});
+        res.status(200).send({ received: true });
       } catch (error: any) {
         console.error("Error updating goal after payment:", error);
         res.status(500).send(`Error: ${error.message}`);
       }
     } else {
-      res.status(200).send({received: true});
+      res.status(200).send({ received: true });
     }
   },
 );
-

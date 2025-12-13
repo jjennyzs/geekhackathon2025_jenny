@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import {setGlobalOptions} from "firebase-functions/v2";
+import { setGlobalOptions } from "firebase-functions/v2";
 import serviceAccount from "../config/serviceAccountKey.json";
 
 // firebase-adminを初期化
@@ -7,7 +7,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
 });
 
-setGlobalOptions({region: "asia-northeast1"});
+setGlobalOptions({ region: "asia-northeast1" });
 
 process.env.TZ = "Asia/Tokyo";
 

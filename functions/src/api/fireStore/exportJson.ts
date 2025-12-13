@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import {onCall} from "firebase-functions/v2/https";
+import { onCall } from "firebase-functions/v2/https";
 
 // admin.initializeApp()が呼ばれた後にfirestore()を取得する
 const getDb = () => admin.firestore();
@@ -211,14 +211,11 @@ async function getGoalWithAllSteps(
  */
 export const exportJson = onCall(
   {
-    cors: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-    ],
+    cors: ["http://localhost:3000", "http://127.0.0.1:3000"],
     region: "asia-northeast1",
   },
   async (request) => {
-    const {userId, categoryId, goalId} = request.data;
+    const { userId, categoryId, goalId } = request.data;
 
     if (!userId || !categoryId || !goalId) {
       throw new Error("userId, categoryId, goalIdは必須です");
@@ -236,4 +233,3 @@ export const exportJson = onCall(
     }
   },
 );
-

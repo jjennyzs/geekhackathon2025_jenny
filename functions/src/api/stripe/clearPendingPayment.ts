@@ -1,6 +1,6 @@
 import * as admin from "firebase-admin";
-import {FieldValue} from "firebase-admin/firestore";
-import {onCall} from "firebase-functions/v2/https";
+import { FieldValue } from "firebase-admin/firestore";
+import { onCall } from "firebase-functions/v2/https";
 
 const getDb = () => admin.firestore();
 
@@ -14,10 +14,10 @@ interface ClearPendingPaymentRequest {
  * 決済がキャンセルされた場合、一時的な決済データをクリア
  */
 export const clearPendingPayment = onCall(
-  {region: "asia-northeast1"},
+  { region: "asia-northeast1" },
   async (request) => {
     try {
-      const {userId, goalId, categoryId} =
+      const { userId, goalId, categoryId } =
         request.data as ClearPendingPaymentRequest;
 
       // バリデーション
@@ -49,11 +49,10 @@ export const clearPendingPayment = onCall(
         });
       }
 
-      return {success: true};
+      return { success: true };
     } catch (error: any) {
       console.error("Error clearing pending payment:", error);
       throw new Error(error.message || "Failed to clear pending payment");
     }
   },
 );
-
