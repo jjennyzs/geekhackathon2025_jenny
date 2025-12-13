@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { onCall } from "firebase-functions/v2/https";
+import * as functions from "firebase-functions";
 
 // 型定義
 interface TodoDoc {
@@ -29,7 +30,9 @@ interface GoalWithSteps {
 
 // OpenAI APIクライアントの初期化
 const initOpenAI = () => {
-  const apiKey = process.env.OPENAI_API_KEY;
+  // ローカルの.env.localを優先、見つからなければFirebase Configから取得
+  const apiKey =
+    process.env.OPENAI_API_KEY || functions.config().openai_api_key?.key;
   console.log(
     "OPENAI_API_KEY loaded:",
     apiKey ? "Yes (length: " + apiKey.length + ")" : "No"
