@@ -96,6 +96,11 @@ const chartData = computed(() => ({
 const config = {
   type: "radar",
   options: {
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
     elements: {
       line: {
         borderWidth: 3,
@@ -112,7 +117,8 @@ const config = {
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col items-center">
+    <p class="mb-6 text-center text-2xl font-bold text-gray-800">達成率</p>
     <Radar :data="chartData" :options="config.options" />
   </div>
 </template>
