@@ -28,6 +28,7 @@ export const useGoalPayment = () => {
         goalId,
         categoryId,
         amount,
+        origin: window.location.origin,
       });
 
       const data = result.data as { url: string };

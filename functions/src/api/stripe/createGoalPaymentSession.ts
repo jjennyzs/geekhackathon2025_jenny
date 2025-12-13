@@ -20,6 +20,7 @@ interface CreateGoalPaymentSessionRequest {
   goalId: string;
   categoryId: string;
   amount: number; // 賭け金（円）
+  origin?: string; // フロントエンドのオリジン（オプション）
 }
 
 /**
@@ -29,7 +30,7 @@ export const createGoalPaymentSession = onCall(
   {region: "asia-northeast1"},
   async (request) => {
     try {
-      const {userId, goalId, categoryId, amount} =
+      const {userId, goalId, categoryId, amount, origin} =
         request.data as CreateGoalPaymentSessionRequest;
 
       // バリデーション
@@ -63,7 +64,7 @@ export const createGoalPaymentSession = onCall(
 
       // 現在のURLを取得（成功/キャンセル時のリダイレクト先）
       // onCallではrawRequestに直接アクセスできないため、環境変数またはデフォルト値を使用
-      const origin = process.env.FRONTEND_URL || "http://localhost:3000";
+      // const origin = process.env.FRONTEND_URL || "http://localhost:3000";
       const successUrl =
         `${origin}/users/${userId}/payment/success?` +
         "session_id={CHECKOUT_SESSION_ID}&" +
