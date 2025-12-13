@@ -95,6 +95,11 @@ const todoWeight = ref<number | undefined>(undefined);
 const goalTitle = ref("");
 const saving = ref(false);
 
+// AI自動生成関連の状態
+const useAiGeneration = ref(false);
+const generating = ref(false);
+const generationProgress = ref("");
+
 // Firestoreからデータを取得
 const fetchRoadmapData = async () => {
   try {
@@ -304,11 +309,79 @@ const closeGoalModal = () => {
   showGoalModal.value = false;
   editingGoal.value = null;
   goalTitle.value = "";
+  useAiGeneration.value = false;
+  generating.value = false;
+  generationProgress.value = "";
+};
+
+// AIでタスクリストを生成
+const generateWithAi = async () => {
+  if (!goalTitle.value.trim()) {
+    return;
+  }
+
+  try {
+    generating.value = true;
+    generationProgress.value = "AIがタスクリストを生成中...";
+
+    // Gemini APIを呼び出してタスクリストを生成
+    const { $functions } = useNuxtApp();
+    const { httpsCallable } = await import("firebase/functions");
+
+    const generateTaskListFromPrompt = httpsCallable(
+      $functions as any,
+      "api_gemini_generateTaskListFromPrompt",
+    );
+
+    const result = await generateTaskListFromPrompt({
+      prompt: goalTitle.value,
+    });
+
+    const resultData = result.data as any;
+    if (!resultData.success) {
+      throw new Error("タスクリストの生成に失敗しました");
+    }
+
+    generationProgress.value = "生成完了！Firestoreにインポート中...";
+
+    // 生成されたデータをFirestoreにインポート
+    const importJson = httpsCallable($functions as any, "api_fireStore_importJson");
+    const importResult = await importJson({
+      userId,
+      categoryId: selectedCategoryId.value,
+      goalData: resultData.data,
+    });
+
+    const importData = importResult.data as any;
+    if (!importData.success) {
+      throw new Error("データのインポートに失敗しました");
+    }
+
+    generationProgress.value = "完了しました！";
+
+    // モーダルを閉じてデータを再取得
+    setTimeout(async () => {
+      closeGoalModal();
+      await fetchRoadmapData();
+    }, 500);
+  } catch (err: any) {
+    console.error("Error generating with AI:", err);
+    error.value = err?.message || "AI生成に失敗しました";
+    generationProgress.value = "";
+  } finally {
+    generating.value = false;
+  }
 };
 
 // 目標を保存
 const saveGoal = async () => {
   if (!goalTitle.value.trim()) {
+    return;
+  }
+
+  // AI生成が有効な場合
+  if (useAiGeneration.value) {
+    await generateWithAi();
     return;
   }
 
@@ -728,18 +801,60 @@ const handleDeleteTodo = async (
             v-model="goalTitle"
             type="text"
             class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="目標のタイトルを入力"
+            :placeholder="
+              useAiGeneration
+                ? '例: プロジェクト管理システムを作成する'
+                : '目標のタイトルを入力'
+            "
           />
         </div>
+
+        <!-- AI自動生成チェックボックス（新規追加時のみ表示） -->
+        <div v-if="!editingGoal?.goalId" class="mb-4">
+          <label class="flex items-center">
+            <input
+              v-model="useAiGeneration"
+              type="checkbox"
+              class="mr-2 size-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+            />
+            <span class="text-sm font-medium text-gray-700">
+              AIで自動生成する
+            </span>
+          </label>
+          <p v-if="useAiGeneration" class="ml-6 mt-1 text-xs text-gray-500">
+            タイトルに基づいてAIがステップとタスクを自動生成します
+          </p>
+        </div>
+
+        <!-- 進捗表示 -->
+        <div
+          v-if="generating"
+          class="mb-4 rounded-md bg-blue-50 p-3 text-center"
+        >
+          <div
+            class="mx-auto mb-2 size-6 animate-spin rounded-full border-b-2 border-blue-600"
+          ></div>
+          <p class="text-sm text-blue-700">{{ generationProgress }}</p>
+        </div>
+
         <div class="flex justify-end gap-3">
           <button
             class="rounded bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
-            :disabled="saving"
+            :disabled="saving || generating"
             @click="closeGoalModal"
           >
             キャンセル
           </button>
           <button
+            v-if="useAiGeneration"
+            class="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
+            :disabled="generating || !goalTitle.trim()"
+            @click="saveGoal"
+          >
+            {{ generating ? "生成中..." : "生成" }}
+          </button>
+          <button
+            v-else
             class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
             :disabled="saving || !goalTitle.trim()"
             @click="saveGoal"
