@@ -5,6 +5,7 @@ import { useFireStore } from "~/composables/useFireStore";
 import CurrentBalance from "~/components/CurrentBalance.vue";
 import StatusSummary from "~/components/StatusSummary.vue";
 import NavigationButtons from "~/components/NavigationButtons.vue";
+import RadarChart from "~/components/RadarChart.vue";
 
 // ルートパラメータからuserIdを取得
 const route = useRoute();
@@ -58,7 +59,9 @@ onMounted(() => {
     </div>
 
     <!-- Current Balance Section -->
-    <CurrentBalance :category-ratios="categoryRatios" />
+    <!-- <CurrentBalance :category-ratios="categoryRatios" /> -->
+    <RadarChart />
+
 
     <!-- Status Summary Section -->
     <StatusSummary :category-ratios="categoryRatios" :loading="loading" />
