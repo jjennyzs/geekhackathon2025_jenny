@@ -14,8 +14,8 @@ const props = defineProps<{
 }>();
 
 const summary = computed(() => props.chartData || {
-  progress: [1, 1, 1],
-  labels: ['','',''],
+  progress: [1, 1, 1, 1, 1, 1],
+  labels: ['','','', '', '',''],
 });
 
 const chartData = computed(() => ({
