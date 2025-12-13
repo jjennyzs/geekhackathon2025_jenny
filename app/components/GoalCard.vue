@@ -27,6 +27,7 @@ type GoalWithSteps = {
   betAmount?: number;
   isLocked?: boolean;
   paymentIntentId?: string;
+  refundedPercentages?: number[];
 };
 
 // Props
@@ -339,9 +340,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                             ? "bg-green-500 text-white hover:bg-green-600"
                             : "bg-gray-300 text-gray-700 hover:bg-gray-400"
                         }`,
-                        disabled: isGoalLocked,
                         onClick: () =>
-                          !isGoalLocked &&
                           onToggleTodo(
                             goalId,
                             currentStepPath,
@@ -558,7 +557,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                   ? 'bg-green-500 text-white hover:bg-green-600'
                   : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
               }`"
-              :disabled="saving || goal.isLocked"
+              :disabled="saving"
               @click="$emit('toggle-todo', goal.id, todo.id, todo.isFinished)"
             >
               {{ todo.isFinished ? "✓ 完了" : "未完了" }}

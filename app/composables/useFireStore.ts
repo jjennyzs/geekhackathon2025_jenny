@@ -265,6 +265,7 @@ export const useFireStore = () => {
     betAmount?: number;
     isLocked?: boolean;
     paymentIntentId?: string;
+    refundedPercentages?: number[];
   };
 
   /**

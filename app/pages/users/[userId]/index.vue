@@ -5,6 +5,7 @@ import type { TodoDoc } from "../../../../@types/todoDoc";
 import GoalCard from "~/components/GoalCard.vue";
 import NavigationButtons from "~/components/NavigationButtons.vue";
 import { useFireStore } from "~/composables/useFireStore";
+import { useGoalPayment } from "~/composables/useGoalPayment";
 
 // ルートパラメータからuserIdを取得
 const route = useRoute();
@@ -37,6 +38,9 @@ const {
   getCategoryRatio,
 } = useFireStore();
 
+// Payment composable
+const { processRefundForGoal } = useGoalPayment();
+
 // Todoの型定義
 type TodoWithId = TodoDoc & {
   id: string;
@@ -59,6 +63,7 @@ type GoalWithSteps = {
   betAmount?: number;
   isLocked?: boolean;
   paymentIntentId?: string;
+  refundedPercentages?: number[];
 };
 
 // データ状態
@@ -387,8 +392,35 @@ const toggleTodoCompletion = async (
     // 達成率を再計算
     await calculateAndUpdateGoalRatio(userId, selectedCategoryId.value, goalId);
 
-    // UIを更新
+    // 賭け金が設定されている場合は返金チェックを実行
     const goal = goals.value.find((g) => g.id === goalId);
+    if (goal?.betAmount && goal?.isLocked) {
+      try {
+        await processRefundForGoal(userId, goalId, selectedCategoryId.value);
+        // 返金後、データを再取得してUIを更新
+        await fetchRoadmapData();
+        // データ再取得後、goalを再取得
+        const updatedGoal = goals.value.find((g) => g.id === goalId);
+        if (updatedGoal) {
+          // UIを更新
+          if (stepPath.length === 0) {
+            // Goal配下のtodo
+            const todo = updatedGoal.todos?.find((t) => t.id === todoId);
+            if (todo) {
+              todo.isFinished = !currentStatus;
+            }
+          } else {
+            // Step配下のtodoは再取得されたデータを使用
+          }
+        }
+        return;
+      } catch (error) {
+        // 返金処理のエラーはログに記録するが、処理は続行
+        console.error("Error processing refund:", error);
+      }
+    }
+
+    // UIを更新
     if (goal) {
       if (stepPath.length === 0) {
         // Goal配下のtodo

@@ -71,9 +71,52 @@ export const useGoalPayment = () => {
     }
   };
 
+  /**
+   * 目標の達成率に応じて返金処理を実行
+   * @param userId - ユーザーID
+   * @param goalId - 目標ID
+   * @param categoryId - カテゴリID
+   * @returns 返金結果
+   */
+  const processRefundForGoal = async (
+    userId: string,
+    goalId: string,
+    categoryId: string,
+  ): Promise<{
+    success: boolean;
+    refunded: boolean;
+    refundedMilestones?: number[];
+    refundAmount?: number;
+    message?: string;
+  }> => {
+    try {
+      const processRefund = httpsCallable(
+        functions,
+        "api_stripe_processRefundForGoal",
+      );
+      const result = await processRefund({
+        userId,
+        goalId,
+        categoryId,
+      });
+
+      return result.data as {
+        success: boolean;
+        refunded: boolean;
+        refundedMilestones?: number[];
+        refundAmount?: number;
+        message?: string;
+      };
+    } catch (error) {
+      console.error("Error processing refund for goal:", error);
+      throw error;
+    }
+  };
+
   return {
     createGoalPaymentSession,
     verifyAndLockGoal,
+    processRefundForGoal,
   };
 };
 

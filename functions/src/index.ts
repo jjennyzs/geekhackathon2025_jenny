@@ -21,6 +21,7 @@ const funcs = {
   api_fireStore_exportJson: './api/fireStore/exportJson',
   api_stripe_createGoalPaymentSession: './api/stripe/createGoalPaymentSession',
   api_stripe_verifyAndLockGoal: './api/stripe/verifyAndLockGoal',
+  api_stripe_processRefundForGoal: './api/stripe/processRefundForGoal',
 };
 
 const loadFunctions = (functionsObj: FunctionsObj) => {
@@ -37,6 +38,8 @@ const loadFunctions = (functionsObj: FunctionsObj) => {
         module.exports[functionName] = importedModule.createGoalPaymentSession;
       } else if (importedModule.verifyAndLockGoal) {
         module.exports[functionName] = importedModule.verifyAndLockGoal;
+      } else if (importedModule.processRefundForGoal) {
+        module.exports[functionName] = importedModule.processRefundForGoal;
       } else {
         // CommonJS形式の場合（default exportなど）
         module.exports[functionName] = importedModule;
