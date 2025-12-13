@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
-import { onCall } from "firebase-functions/v2/https";
+import {onCall} from "firebase-functions/v2/https";
 import Stripe from "stripe";
-import { FieldValue } from "firebase-admin/firestore";
+import {FieldValue} from "firebase-admin/firestore";
 
 const getDb = () => admin.firestore();
 
@@ -27,10 +27,10 @@ interface ProcessRefundForGoalRequest {
  * 25%達成ごとに賭け金の25%を返還
  */
 export const processRefundForGoal = onCall(
-  { region: "asia-northeast1" },
+  {region: "asia-northeast1"},
   async (request) => {
     try {
-      const { userId, goalId, categoryId } =
+      const {userId, goalId, categoryId} =
         request.data as ProcessRefundForGoalRequest;
 
       // バリデーション
@@ -53,10 +53,18 @@ export const processRefundForGoal = onCall(
       }
 
       const goalData = goalSnap.data();
-      
+
       // 賭け金が設定されていない、またはロックされていない場合は返金しない
-      if (!goalData?.betAmount || !goalData?.isLocked || !goalData?.paymentIntentId) {
-        return { success: true, refunded: false, message: "Goal is not eligible for refund" };
+      if (
+        !goalData?.betAmount ||
+        !goalData?.isLocked ||
+        !goalData?.paymentIntentId
+      ) {
+        return {
+          success: true,
+          refunded: false,
+          message: "Goal is not eligible for refund",
+        };
       }
 
       const betAmount = goalData.betAmount;
@@ -67,11 +75,13 @@ export const processRefundForGoal = onCall(
       // 返金すべきパーセンテージを計算（25%, 50%, 75%, 100%）
       const refundMilestones = [25, 50, 75, 100];
       const eligibleMilestones = refundMilestones.filter(
-        (milestone) => currentRatio >= milestone && !refundedPercentages.includes(milestone)
+        (milestone) =>
+          currentRatio >= milestone &&
+          !refundedPercentages.includes(milestone),
       );
 
       if (eligibleMilestones.length === 0) {
-        return { success: true, refunded: false, message: "No refund eligible" };
+        return {success: true, refunded: false, message: "No refund eligible"};
       }
 
       // 返金処理を実行
@@ -96,12 +106,16 @@ export const processRefundForGoal = onCall(
           });
 
           refundedMilestones.push(milestone);
-          
+
           console.log(
-            `Refund processed for goal ${goalId} at ${milestone}% milestone: ${refund.id}`
+            `Refund processed for goal ${goalId} ` +
+            `at ${milestone}% milestone: ${refund.id}`,
           );
         } catch (error: any) {
-          console.error(`Error processing refund for milestone ${milestone}:`, error);
+          console.error(
+            `Error processing refund for milestone ${milestone}:`,
+            error,
+          );
           // 一部の返金が失敗しても続行
         }
       }
@@ -117,11 +131,16 @@ export const processRefundForGoal = onCall(
           success: true,
           refunded: true,
           refundedMilestones,
-          refundAmount: refundAmount * refundedMilestones.length,
+          refundAmount:
+            refundAmount * refundedMilestones.length,
         };
       }
 
-      return { success: true, refunded: false, message: "Refund processing failed" };
+      return {
+        success: true,
+        refunded: false,
+        message: "Refund processing failed",
+      };
     } catch (error: any) {
       console.error("Error processing refund for goal:", error);
       throw new Error(error.message || "Failed to process refund for goal");

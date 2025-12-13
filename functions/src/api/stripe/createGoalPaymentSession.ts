@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { onCall } from "firebase-functions/v2/https";
+import {onCall} from "firebase-functions/v2/https";
 import Stripe from "stripe";
 
 const getDb = () => admin.firestore();
@@ -26,10 +26,10 @@ interface CreateGoalPaymentSessionRequest {
  * 目標に賭ける金額でStripe決済セッションを作成
  */
 export const createGoalPaymentSession = onCall(
-  { region: "asia-northeast1" },
+  {region: "asia-northeast1"},
   async (request) => {
     try {
-      const { userId, goalId, categoryId, amount } =
+      const {userId, goalId, categoryId, amount} =
         request.data as CreateGoalPaymentSessionRequest;
 
       // バリデーション
@@ -64,8 +64,13 @@ export const createGoalPaymentSession = onCall(
       // 現在のURLを取得（成功/キャンセル時のリダイレクト先）
       // onCallではrawRequestに直接アクセスできないため、環境変数またはデフォルト値を使用
       const origin = process.env.FRONTEND_URL || "http://localhost:3000";
-      const successUrl = `${origin}/users/${userId}/payment/success?session_id={CHECKOUT_SESSION_ID}&goal_id=${goalId}&category_id=${categoryId}`;
-      const cancelUrl = `${origin}/users/${userId}/payment/cancel?goal_id=${goalId}&category_id=${categoryId}`;
+      const successUrl =
+        `${origin}/users/${userId}/payment/success?` +
+        "session_id={CHECKOUT_SESSION_ID}&" +
+        `goal_id=${goalId}&category_id=${categoryId}`;
+      const cancelUrl =
+        `${origin}/users/${userId}/payment/cancel?` +
+        `goal_id=${goalId}&category_id=${categoryId}`;
 
       // Stripe Checkout Sessionを作成
       const stripe = getStripe();
@@ -101,7 +106,7 @@ export const createGoalPaymentSession = onCall(
         betAmount: amount,
       });
 
-      return { url: session.url };
+      return {url: session.url};
     } catch (error: any) {
       console.error("Error creating payment session:", error);
       throw new Error(error.message || "Failed to create payment session");

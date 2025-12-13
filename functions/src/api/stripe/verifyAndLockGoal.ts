@@ -1,6 +1,6 @@
 import * as admin from "firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
-import { onCall } from "firebase-functions/v2/https";
+import {FieldValue} from "firebase-admin/firestore";
+import {onCall} from "firebase-functions/v2/https";
 import Stripe from "stripe";
 
 const getDb = () => admin.firestore();
@@ -27,10 +27,10 @@ interface VerifyAndLockGoalRequest {
  * Stripe Checkout Sessionを確認し、決済が完了していれば目標をロック
  */
 export const verifyAndLockGoal = onCall(
-  { region: "asia-northeast1" },
+  {region: "asia-northeast1"},
   async (request) => {
     try {
-      const { userId, goalId, categoryId, sessionId } =
+      const {userId, goalId, categoryId, sessionId} =
         request.data as VerifyAndLockGoalRequest;
 
       // バリデーション
@@ -48,8 +48,11 @@ export const verifyAndLockGoal = onCall(
       }
 
       // メタデータを確認
-      const { userId: sessionUserId, goalId: sessionGoalId, categoryId: sessionCategoryId } =
-        session.metadata || {};
+      const {
+        userId: sessionUserId,
+        goalId: sessionGoalId,
+        categoryId: sessionCategoryId,
+      } = session.metadata || {};
 
       if (
         sessionUserId !== userId ||
@@ -75,21 +78,21 @@ export const verifyAndLockGoal = onCall(
       }
 
       const goalData = goalSnap.data();
-      
+
       // 既にロックされている場合は成功として返す
       if (goalData?.isLocked) {
-        return { success: true, alreadyLocked: true };
+        return {success: true, alreadyLocked: true};
       }
 
-        // 目標をロックし、決済情報を保存
-        await goalRef.update({
-          isLocked: true,
-          paymentIntentId: session.payment_intent as string,
-          paymentCompletedAt: FieldValue.serverTimestamp(),
-          paymentSessionId: sessionId,
-        });
+      // 目標をロックし、決済情報を保存
+      await goalRef.update({
+        isLocked: true,
+        paymentIntentId: session.payment_intent as string,
+        paymentCompletedAt: FieldValue.serverTimestamp(),
+        paymentSessionId: sessionId,
+      });
 
-      return { success: true, locked: true };
+      return {success: true, locked: true};
     } catch (error: any) {
       console.error("Error verifying and locking goal:", error);
       throw new Error(error.message || "Failed to verify and lock goal");
