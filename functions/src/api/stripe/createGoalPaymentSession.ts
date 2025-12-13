@@ -65,7 +65,7 @@ export const createGoalPaymentSession = onCall(
       // onCallではrawRequestに直接アクセスできないため、環境変数またはデフォルト値を使用
       const origin = process.env.FRONTEND_URL || "http://localhost:3000";
       const successUrl = `${origin}/users/${userId}/payment/success?session_id={CHECKOUT_SESSION_ID}&goal_id=${goalId}&category_id=${categoryId}`;
-      const cancelUrl = `${origin}/users/${userId}/payment/cancel`;
+      const cancelUrl = `${origin}/users/${userId}/payment/cancel?goal_id=${goalId}&category_id=${categoryId}`;
 
       // Stripe Checkout Sessionを作成
       const stripe = getStripe();

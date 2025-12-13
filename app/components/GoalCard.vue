@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineComponent, h, type PropType, ref } from "vue";
+import { defineComponent, h, type PropType, ref, computed } from "vue";
 import { useRoute } from "vue-router";
 import type { TodoDoc } from "../../@types/todoDoc";
 import { useGoalPayment } from "~/composables/useGoalPayment";
@@ -48,6 +48,23 @@ const { createGoalPaymentSession } = useGoalPayment();
 const showBetModal = ref(false);
 const betAmount = ref<number>(1000);
 const isProcessingPayment = ref(false);
+
+// 返還金の計算
+const refundedPercentage = computed(() => {
+  if (!props.goal.refundedPercentages || props.goal.refundedPercentages.length === 0) {
+    return 0;
+  }
+  // 返還済みのパーセンテージの最大値を返す（例: [25, 50]なら50%）
+  return Math.max(...props.goal.refundedPercentages);
+});
+
+const refundedAmount = computed(() => {
+  if (!props.goal.betAmount || refundedPercentage.value === 0) {
+    return 0;
+  }
+  // 返還済みのパーセンテージに基づいて返還金額を計算
+  return Math.floor(props.goal.betAmount * (refundedPercentage.value / 100));
+});
 
 // 賭けるボタンのクリックハンドラー
 const handleBetClick = () => {
@@ -487,11 +504,22 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
             <span class="text-sm text-gray-600">達成率: </span>
             <span class="font-semibold">{{ props.goal.ratio }}%</span>
           </div>
-          <div v-if="props.goal.betAmount" class="mt-2">
-            <span class="text-sm text-gray-600">賭け金: </span>
-            <span class="font-semibold text-green-600"
-              >¥{{ props.goal.betAmount.toLocaleString() }}</span
-            >
+          <div v-if="props.goal.betAmount && props.goal.isLocked" class="mt-2 space-y-1">
+            <div>
+              <span class="text-sm text-gray-600">賭け金: </span>
+              <span class="font-semibold text-green-600"
+                >¥{{ props.goal.betAmount.toLocaleString() }}</span
+              >
+            </div>
+            <div v-if="refundedAmount > 0">
+              <span class="text-sm text-gray-600">返還金: </span>
+              <span class="font-semibold text-blue-600"
+                >¥{{ refundedAmount.toLocaleString() }}</span
+              >
+              <span class="text-xs text-gray-500 ml-1"
+                >({{ refundedPercentage }}%返還済み)</span
+              >
+            </div>
           </div>
           <div v-if="props.goal.isLocked" class="mt-2">
             <span

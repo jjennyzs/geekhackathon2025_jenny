@@ -113,10 +113,41 @@ export const useGoalPayment = () => {
     }
   };
 
+  /**
+   * 決済がキャンセルされた場合、一時的な決済データをクリア
+   * @param userId - ユーザーID
+   * @param goalId - 目標ID
+   * @param categoryId - カテゴリID
+   * @returns クリア結果
+   */
+  const clearPendingPayment = async (
+    userId: string,
+    goalId: string,
+    categoryId: string,
+  ): Promise<{ success: boolean }> => {
+    try {
+      const clearPayment = httpsCallable(
+        functions,
+        "api_stripe_clearPendingPayment",
+      );
+      const result = await clearPayment({
+        userId,
+        goalId,
+        categoryId,
+      });
+
+      return result.data as { success: boolean };
+    } catch (error) {
+      console.error("Error clearing pending payment:", error);
+      throw error;
+    }
+  };
+
   return {
     createGoalPaymentSession,
     verifyAndLockGoal,
     processRefundForGoal,
+    clearPendingPayment,
   };
 };
 

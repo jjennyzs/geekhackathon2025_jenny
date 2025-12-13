@@ -1,9 +1,27 @@
 <script setup lang="ts">
+import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useGoalPayment } from "~/composables/useGoalPayment";
 
 const route = useRoute();
 const router = useRouter();
 const userId = route.params.userId as string;
+const goalId = route.query.goal_id as string;
+const categoryId = route.query.category_id as string;
+
+const { clearPendingPayment } = useGoalPayment();
+
+onMounted(async () => {
+  // 決済がキャンセルされた場合、一時的な決済データをクリア
+  if (goalId && categoryId) {
+    try {
+      await clearPendingPayment(userId, goalId, categoryId);
+    } catch (error) {
+      console.error("Error clearing pending payment:", error);
+      // エラーが発生しても処理は続行
+    }
+  }
+});
 </script>
 
 <template>
