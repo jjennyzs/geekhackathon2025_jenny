@@ -19,6 +19,7 @@ interface FunctionsObj {
 const funcs = {
   // API
   api_fireStore_exportJson: './api/fireStore/exportJson',
+  api_fireStore_importJson: './api/fireStore/importJson',
 };
 
 const loadFunctions = (functionsObj: FunctionsObj) => {
@@ -28,9 +29,11 @@ const loadFunctions = (functionsObj: FunctionsObj) => {
       process.env.FUNCTION_NAME.startsWith(functionName)
     ) {
       const importedModule = require(functionsObj[functionName]);
-      // ES modulesのexport形式に対応（exportJsonなど名前付きエクスポート）
+      // ES modulesのexport形式に対応（exportJson, importJsonなど名前付きエクスポート）
       if (importedModule.exportJson) {
         module.exports[functionName] = importedModule.exportJson;
+      } else if (importedModule.importJson) {
+        module.exports[functionName] = importedModule.importJson;
       } else {
         // CommonJS形式の場合（default exportなど）
         module.exports[functionName] = importedModule;
