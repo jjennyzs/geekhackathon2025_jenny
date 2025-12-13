@@ -2,7 +2,16 @@
 
 import { ref, computed, onMounted } from 'vue';
 import { Radar } from 'vue-chartjs';
-import { Chart as ChartJS, Title, Tooltip, Legend, RadialLinearScale, PointElement, LineElement, Filler } from 'chart.js';
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+} from 'chart.js';
 import { useFireStore } from '#imports';
 
 ChartJS.register(Title, Tooltip, Legend, RadialLinearScale, PointElement, LineElement, Filler);
