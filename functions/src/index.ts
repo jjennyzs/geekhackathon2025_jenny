@@ -20,6 +20,7 @@ const funcs = {
   // API
   api_fireStore_exportJson: './api/fireStore/exportJson',
   api_fireStore_importJson: './api/fireStore/importJson',
+  api_gemini_generateTaskListFromPrompt: './api/gemini/generate',
 };
 
 const loadFunctions = (functionsObj: FunctionsObj) => {
@@ -34,6 +35,8 @@ const loadFunctions = (functionsObj: FunctionsObj) => {
         module.exports[functionName] = importedModule.exportJson;
       } else if (importedModule.importJson) {
         module.exports[functionName] = importedModule.importJson;
+      } else if (importedModule.generateTaskListFromPrompt) {
+        module.exports[functionName] = importedModule.generateTaskListFromPrompt;
       } else {
         // CommonJS形式の場合（default exportなど）
         module.exports[functionName] = importedModule;
