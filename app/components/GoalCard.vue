@@ -562,7 +562,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
     </div>
 
     <!-- タスク + 目標 操作ボタン（上部） -->
-<div class="mb-4 flex items-center gap-2">
+<div v-if="!props.goal.isLocked" class="mb-4 flex items-center gap-2">
   <button
     class="rounded bg-green-100 px-3 py-1 text-sm text-green-600 hover:bg-green-300"
     @click="$emit('add-todo', goal.id)"
