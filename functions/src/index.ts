@@ -19,6 +19,8 @@ interface FunctionsObj {
 const funcs = {
   // API
   api_fireStore_exportJson: './api/fireStore/exportJson',
+  api_stripe_createGoalPaymentSession: './api/stripe/createGoalPaymentSession',
+  api_stripe_verifyAndLockGoal: './api/stripe/verifyAndLockGoal',
 };
 
 const loadFunctions = (functionsObj: FunctionsObj) => {
@@ -28,9 +30,13 @@ const loadFunctions = (functionsObj: FunctionsObj) => {
       process.env.FUNCTION_NAME.startsWith(functionName)
     ) {
       const importedModule = require(functionsObj[functionName]);
-      // ES modulesのexport形式に対応（exportJsonなど名前付きエクスポート）
+      // ES modulesのexport形式に対応（名前付きエクスポート）
       if (importedModule.exportJson) {
         module.exports[functionName] = importedModule.exportJson;
+      } else if (importedModule.createGoalPaymentSession) {
+        module.exports[functionName] = importedModule.createGoalPaymentSession;
+      } else if (importedModule.verifyAndLockGoal) {
+        module.exports[functionName] = importedModule.verifyAndLockGoal;
       } else {
         // CommonJS形式の場合（default exportなど）
         module.exports[functionName] = importedModule;

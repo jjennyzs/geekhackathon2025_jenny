@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { defineComponent, h, type PropType } from "vue";
+import { defineComponent, h, type PropType, ref } from "vue";
+import { useRoute } from "vue-router";
 import type { TodoDoc } from "../../@types/todoDoc";
+import { useGoalPayment } from "~/composables/useGoalPayment";
 
 // RoadmapStepコンポーネント（簡略版、後で別ファイルに分けることも可能）
 
@@ -22,13 +24,61 @@ type GoalWithSteps = {
   ratio: number;
   steps: StepWithChildren[];
   todos?: TodoWithId[];
+  betAmount?: number;
+  isLocked?: boolean;
+  paymentIntentId?: string;
 };
 
 // Props
 const props = defineProps<{
   goal: GoalWithSteps;
   saving: boolean;
+  categoryId: string;
 }>();
+
+// Route
+const route = useRoute();
+const userId = route.params.userId as string;
+
+// Payment composable
+const { createGoalPaymentSession } = useGoalPayment();
+
+// 賭け金入力モーダルの状態
+const showBetModal = ref(false);
+const betAmount = ref<number>(1000);
+const isProcessingPayment = ref(false);
+
+// 賭けるボタンのクリックハンドラー
+const handleBetClick = () => {
+  if (props.goal.isLocked) {
+    return;
+  }
+  showBetModal.value = true;
+};
+
+// 決済セッションを作成してリダイレクト
+const proceedToPayment = async () => {
+  if (!betAmount.value || betAmount.value <= 0) {
+    alert("金額を正しく入力してください");
+    return;
+  }
+
+  try {
+    isProcessingPayment.value = true;
+    const url = await createGoalPaymentSession(
+      userId,
+      props.goal.id,
+      props.categoryId,
+      betAmount.value,
+    );
+    // Stripe決済ページにリダイレクト
+    window.location.href = url;
+  } catch (error: any) {
+    console.error("Error creating payment session:", error);
+    alert(`決済セッションの作成に失敗しました: ${error.message}`);
+    isProcessingPayment.value = false;
+  }
+};
 
 // Emits
 const emit = defineEmits<{
@@ -104,6 +154,10 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
       type: Array as PropType<string[]>,
       default: () => [],
     },
+    isGoalLocked: {
+      type: Boolean,
+      default: false,
+    },
     onEditStep: {
       type: Function as PropType<
         (
@@ -167,6 +221,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         level,
         goalId,
         stepPath,
+        isGoalLocked,
         onEditStep,
         onDeleteStep,
         onAddSubStep,
@@ -206,52 +261,53 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                   }),
                 h("span", { class: "text-gray-800 font-medium" }, step.title),
               ]),
-              h(
-                "div",
-                {
-                  class:
-                    "flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity",
-                },
-                [
-                  h(
-                    "button",
-                    {
-                      class:
-                        "text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600",
-                      onClick: () => onAddSubStep(goalId, currentStepPath),
-                    },
-                    "+ ステップ",
-                  ),
-                  h(
-                    "button",
-                    {
-                      class:
-                        "text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600",
-                      onClick: () => onAddTodo(goalId, currentStepPath),
-                    },
-                    "+ TODO",
-                  ),
-                  h(
-                    "button",
-                    {
-                      class:
-                        "text-xs px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600",
-                      onClick: () =>
-                        onEditStep(goalId, stepPath, step.id, step.title),
-                    },
-                    "編集",
-                  ),
-                  h(
-                    "button",
-                    {
-                      class:
-                        "text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600",
-                      onClick: () => onDeleteStep(goalId, step.id, stepPath),
-                    },
-                    "削除",
-                  ),
-                ],
-              ),
+              !isGoalLocked &&
+                h(
+                  "div",
+                  {
+                    class:
+                      "flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity",
+                  },
+                  [
+                    h(
+                      "button",
+                      {
+                        class:
+                          "text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600",
+                        onClick: () => onAddSubStep(goalId, currentStepPath),
+                      },
+                      "+ ステップ",
+                    ),
+                    h(
+                      "button",
+                      {
+                        class:
+                          "text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600",
+                        onClick: () => onAddTodo(goalId, currentStepPath),
+                      },
+                      "+ TODO",
+                    ),
+                    h(
+                      "button",
+                      {
+                        class:
+                          "text-xs px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600",
+                        onClick: () =>
+                          onEditStep(goalId, stepPath, step.id, step.title),
+                      },
+                      "編集",
+                    ),
+                    h(
+                      "button",
+                      {
+                        class:
+                          "text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600",
+                        onClick: () => onDeleteStep(goalId, step.id, stepPath),
+                      },
+                      "削除",
+                    ),
+                  ],
+                ),
             ],
           ),
           // todoを表示
@@ -275,24 +331,26 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                   },
                   [
                     h("div", { class: "flex items-center flex-1" }, [
-                      h(
-                        "button",
-                        {
-                          class: `mr-2 px-2 py-1 text-xs rounded ${
-                            todo.isFinished
-                              ? "bg-green-500 text-white hover:bg-green-600"
-                              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-                          }`,
-                          onClick: () =>
-                            onToggleTodo(
-                              goalId,
-                              currentStepPath,
-                              todo.id,
-                              todo.isFinished,
-                            ),
-                        },
-                        todo.isFinished ? "✓ 完了" : "未完了",
-                      ),
+                    h(
+                      "button",
+                      {
+                        class: `mr-2 px-2 py-1 text-xs rounded ${
+                          todo.isFinished
+                            ? "bg-green-500 text-white hover:bg-green-600"
+                            : "bg-gray-300 text-gray-700 hover:bg-gray-400"
+                        }`,
+                        disabled: isGoalLocked,
+                        onClick: () =>
+                          !isGoalLocked &&
+                          onToggleTodo(
+                            goalId,
+                            currentStepPath,
+                            todo.id,
+                            todo.isFinished,
+                          ),
+                      },
+                      todo.isFinished ? "✓ 完了" : "未完了",
+                    ),
                       h(
                         "span",
                         { class: "font-semibold text-blue-700 mr-2" },
@@ -306,42 +364,43 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                           `(重み: ${todo.weight})`,
                         ),
                     ]),
-                    h(
-                      "div",
-                      {
-                        class:
-                          "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
-                      },
-                      [
-                        h(
-                          "button",
-                          {
-                            class:
-                              "text-xs px-1 py-0.5 bg-yellow-500 text-white rounded hover:bg-yellow-600",
-                            onClick: () =>
-                              onEditTodo(
-                                goalId,
-                                currentStepPath,
-                                todo.id,
-                                todo.task,
-                                todo.isFinished,
-                                todo.weight,
-                              ),
-                          },
-                          "編集",
-                        ),
-                        h(
-                          "button",
-                          {
-                            class:
-                              "text-xs px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600",
-                            onClick: () =>
-                              onDeleteTodo(goalId, todo.id, currentStepPath),
-                          },
-                          "削除",
-                        ),
-                      ],
-                    ),
+                    !isGoalLocked &&
+                      h(
+                        "div",
+                        {
+                          class:
+                            "flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+                        },
+                        [
+                          h(
+                            "button",
+                            {
+                              class:
+                                "text-xs px-1 py-0.5 bg-yellow-500 text-white rounded hover:bg-yellow-600",
+                              onClick: () =>
+                                onEditTodo(
+                                  goalId,
+                                  currentStepPath,
+                                  todo.id,
+                                  todo.task,
+                                  todo.isFinished,
+                                  todo.weight,
+                                ),
+                            },
+                            "編集",
+                          ),
+                          h(
+                            "button",
+                            {
+                              class:
+                                "text-xs px-1 py-0.5 bg-red-500 text-white rounded hover:bg-red-600",
+                              onClick: () =>
+                                onDeleteTodo(goalId, todo.id, currentStepPath),
+                            },
+                            "削除",
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -361,6 +420,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                     level: level + 1,
                     goalId,
                     stepPath: currentStepPath,
+                    isGoalLocked,
                     onEditStep: (
                       gId: string,
                       sPath: string[],
@@ -428,15 +488,37 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
             <span class="text-sm text-gray-600">達成率: </span>
             <span class="font-semibold">{{ props.goal.ratio }}%</span>
           </div>
+          <div v-if="props.goal.betAmount" class="mt-2">
+            <span class="text-sm text-gray-600">賭け金: </span>
+            <span class="font-semibold text-green-600"
+              >¥{{ props.goal.betAmount.toLocaleString() }}</span
+            >
+          </div>
+          <div v-if="props.goal.isLocked" class="mt-2">
+            <span
+              class="inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800"
+            >
+              ロック中（編集不可）
+            </span>
+          </div>
         </div>
         <div class="flex gap-2">
           <button
+            v-if="!props.goal.isLocked"
+            class="rounded bg-purple-500 px-3 py-1 text-sm text-white hover:bg-purple-600"
+            @click="handleBetClick"
+          >
+            賭ける
+          </button>
+          <button
+            v-if="!props.goal.isLocked"
             class="rounded bg-yellow-500 px-3 py-1 text-sm text-white hover:bg-yellow-600"
             @click="$emit('edit-goal', props.goal.id, props.goal.title)"
           >
             編集
           </button>
           <button
+            v-if="!props.goal.isLocked"
             class="rounded bg-red-500 px-3 py-1 text-sm text-white hover:bg-red-600"
             :disabled="saving"
             @click="$emit('delete-goal', props.goal.id)"
@@ -452,6 +534,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
       <div class="mb-2 flex items-center justify-between">
         <h3 class="text-lg font-semibold text-gray-700">TODO</h3>
         <button
+          v-if="!goal.isLocked"
           class="rounded bg-green-500 px-3 py-1 text-sm text-white hover:bg-green-600"
           @click="$emit('add-todo', goal.id)"
         >
@@ -475,7 +558,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                   ? 'bg-green-500 text-white hover:bg-green-600'
                   : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
               }`"
-              :disabled="saving"
+              :disabled="saving || goal.isLocked"
               @click="$emit('toggle-todo', goal.id, todo.id, todo.isFinished)"
             >
               {{ todo.isFinished ? "✓ 完了" : "未完了" }}
@@ -492,6 +575,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
             </span>
           </div>
           <div
+            v-if="!goal.isLocked"
             class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
           >
             <button
@@ -525,6 +609,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
       <div class="mb-4 flex items-center justify-between">
         <h3 class="text-lg font-semibold text-gray-700">ステップ</h3>
         <button
+          v-if="!goal.isLocked"
           class="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
           @click="$emit('add-step', goal.id)"
         >
@@ -540,6 +625,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
           :level="0"
           :goal-id="goal.id"
           :step-path="[]"
+          :is-goal-locked="goal.isLocked || false"
           :on-edit-step="
             (
               goalId: string,
@@ -601,6 +687,54 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         />
       </div>
       <p v-else class="italic text-gray-500">ステップがありません</p>
+    </div>
+
+    <!-- 賭け金入力モーダル -->
+    <div
+      v-if="showBetModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      @click.self="showBetModal = false"
+    >
+      <div class="w-full max-w-md rounded-lg bg-white p-6">
+        <h2 class="mb-4 text-xl font-bold">目標達成に賭ける</h2>
+        <p class="mb-4 text-sm text-gray-600">
+          目標「{{ props.goal.title }}」の達成に賭ける金額を入力してください。
+          <br />
+          決済が完了すると、この目標は編集できなくなります。
+        </p>
+        <div class="mb-4">
+          <label class="mb-2 block text-sm font-medium text-gray-700">
+            賭け金（円）
+          </label>
+          <input
+            v-model.number="betAmount"
+            type="number"
+            min="100"
+            step="100"
+            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder="1000"
+          />
+          <p class="mt-1 text-xs text-gray-500">
+            最小金額: ¥100
+          </p>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button
+            class="rounded bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
+            :disabled="isProcessingPayment"
+            @click="showBetModal = false"
+          >
+            キャンセル
+          </button>
+          <button
+            class="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
+            :disabled="isProcessingPayment || !betAmount || betAmount < 100"
+            @click="proceedToPayment"
+          >
+            {{ isProcessingPayment ? "処理中..." : "決済に進む" }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

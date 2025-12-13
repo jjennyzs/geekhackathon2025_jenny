@@ -40,4 +40,10 @@ export default defineNuxtRouteMiddleware(() => {
     // 開発時はlocalhostを参照する
     connectFunctionsEmulator(functions, "localhost", 5001);
   }
+
+  return {
+    provide: {
+      functions,
+    },
+  };
 });
