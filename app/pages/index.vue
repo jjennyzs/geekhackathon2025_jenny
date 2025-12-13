@@ -1,7 +1,6 @@
 <script setup lang="ts">
+
 import { navigateTo } from "#app";
-
-
 
 // ページ読み込み時に自動でログインページに遷移
 await navigateTo("/login", { replace: true });
