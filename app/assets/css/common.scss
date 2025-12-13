@@ -1,3 +1,15 @@
 /* ----------------
 Common CSS
 ------------------ */
+
+/* Import M PLUS Rounded 1c from Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700;800&display=swap");
+
+/* Apply globally */
+:root,
+html,
+body {
+	font-family: "M PLUS Rounded 1c", ui-sans-serif, system-ui, -apple-system,
+		"Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+		"Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}

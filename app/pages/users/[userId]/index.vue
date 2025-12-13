@@ -19,6 +19,37 @@ const categories = [
   { id: "work", label: "仕事" },
 ] as const;
 
+const categoryMeta = {
+  health: {
+    color: '#E7000B',
+    bg: '#FEF2F2',
+    progressBg: 'linear-gradient(90deg, #FF7549 0%, #FF2F5A 100%)',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-dumbbell-icon lucide-dumbbell"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z"/><path d="m2.5 21.5 1.4-1.4"/><path d="m20.1 3.9 1.4-1.4"/><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z"/><path d="m9.6 14.4 4.8-4.8"/></svg>`, 
+    label: '健康達成率:'
+  },
+   life: {
+    color: '#00A63E',
+    bg: '#F0FDF4',
+    progressBg: 'var(--gradientGreen, linear-gradient(90deg, #00DF73 0%, #0DB87E 100%))',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-coffee-icon lucide-coffee"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg>`, 
+    label: '生活達成率:'
+  },
+  study: {
+    color: '#155DFC',
+    bg: '#EFF6FF',
+    progressBg: 'var(--gradient-blue, linear-gradient(90deg, #4FA3FF 0%, #00B7DC 100%))',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-icon lucide-book-open"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>`, 
+    label: '学習達成率:'
+  },
+  work: {
+    color: '#4F39F6',
+    bg: '#EEF2FF',
+    progressBg: 'var(--gradient-purple, linear-gradient(90deg, #8083FF 0%, #AC48FF 100%))',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-briefcase-icon lucide-briefcase"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>`, 
+    label: '仕事達成率:'
+  }
+  };
+
 // 選択中のカテゴリ
 const selectedCategoryId = ref<string>("health");
 
@@ -571,7 +602,21 @@ const handleDeleteTodo = async (
 <template>
   <div class="container mx-auto px-4 py-8">
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-3xl font-bold">ロードマップ</h1>
+      <h1 class="flex items-center gap-3 text-4xl font-extrabold tracking-tight">
+        <!-- Gradient-stroked icon to match title colors -->
+        <svg class="size-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <defs>
+            <linearGradient id="roadmapTitleGradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#951BFA" />
+              <stop offset="100%" stop-color="#6863FF" />
+            </linearGradient>
+          </defs>
+          <path stroke="url(#roadmapTitleGradient)" d="M12 13V2l8 4-8 4" />
+          <path stroke="url(#roadmapTitleGradient)" d="M20.561 10.222a9 9 0 1 1-12.55-5.29" />
+          <path stroke="url(#roadmapTitleGradient)" d="M8.002 9.997a5 5 0 1 0 8.9 2.02" />
+        </svg>
+        <span class="bg-gradient-to-r from-[#951BFA] to-[#6863FF] bg-clip-text text-transparent">イッポ</span>
+      </h1>
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-4">
           <button
@@ -604,13 +649,35 @@ const handleDeleteTodo = async (
     </div>
 
     <!-- カテゴリ達成率表示 -->
-    <div
-      v-if="!loading && !error"
-      class="mb-8 rounded-lg bg-blue-100 p-4 shadow-sm"
-    >
-      <h2 class="text-xl font-bold text-blue-800">
-        カテゴリ達成率: {{ categoryRatio }}%
-      </h2>
+    <div v-if="!loading && !error" class="mb-8">
+      <div
+        class="category-box w-full flex flex-col justify-center"
+        :style="{
+          borderRadius: '1.5625rem',
+          border: '3px solid #FFF',
+          background: categoryMeta[selectedCategoryId]?.bg,
+          boxShadow: '0 2px 4px 0 rgba(0,0,0,0.25)',
+          padding: '1.5rem',
+        }"
+      >
+        <h2 class="text-xl font-bold flex items-center" :style="{ color: categoryMeta[selectedCategoryId]?.color }">
+          <div class="category-icon-circle mr-3">
+            <span v-html="categoryMeta[selectedCategoryId]?.icon"></span>
+          </div>
+          {{ categoryMeta[selectedCategoryId]?.label }} {{ categoryRatio }}%
+        </h2>
+        <div class="mt-3">
+          <div class="progress-track">
+            <div
+              class="progress-fill"
+              :style="{
+                width: (Math.min(Math.max(categoryRatio, 0), 100)) + '%',
+                background: categoryMeta[selectedCategoryId]?.progressBg,
+              }"
+            ></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ローディング状態 -->
@@ -862,5 +929,36 @@ const handleDeleteTodo = async (
 
 .step-item {
   position: relative;
+}
+
+.category-icon-circle {
+  width: 2.875rem; /* ~46px */
+  height: 2.875rem;
+  border-radius: 9999px;
+  background: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.category-icon-circle svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.progress-track {
+  width: 100%;
+  height: 0.8125rem; /* ~13px */
+  border-radius: 0.5rem;
+  background: #E5E7EB; /* gray-200 */
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 0.5rem;
+  transition: width 0.3s ease;
 }
 </style>
