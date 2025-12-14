@@ -46,7 +46,7 @@ async function getStepsRecursively(
   userId: string,
   categoryId: string,
   goalId: string,
-  parentPath: string[] = [],
+  parentPath: string[] = []
 ): Promise<StepWithChildren[]> {
   try {
     const db = getDb();
@@ -78,7 +78,7 @@ async function getStepsRecursively(
           userId,
           categoryId,
           goalId,
-          [...parentPath, stepId],
+          [...parentPath, stepId]
         );
 
         // ステップ配下のtodoを取得
@@ -93,7 +93,7 @@ async function getStepsRecursively(
           steps: childSteps,
           todos: todos.length > 0 ? todos : undefined,
         };
-      }),
+      })
     );
 
     return steps;
@@ -110,7 +110,7 @@ async function getTodos(
   userId: string,
   categoryId: string,
   goalId: string,
-  stepPath: string[] = [],
+  stepPath: string[] = []
 ): Promise<TodoWithId[]> {
   try {
     const db = getDb();
@@ -153,7 +153,7 @@ async function getTodos(
 async function getGoalWithAllSteps(
   userId: string,
   categoryId: string,
-  goalId: string,
+  goalId: string
 ): Promise<GoalWithSteps> {
   try {
     const db = getDb();
@@ -169,7 +169,7 @@ async function getGoalWithAllSteps(
 
     if (!goalSnap.exists) {
       throw new Error(
-        `Goal with id ${goalId} not found in category ${categoryId}`,
+        `Goal with id ${goalId} not found in category ${categoryId}`
       );
     }
 
@@ -179,7 +179,7 @@ async function getGoalWithAllSteps(
     const steps: StepWithChildren[] = await getStepsRecursively(
       userId,
       categoryId,
-      goalId,
+      goalId
     );
 
     // goalId配下のtodoを取得
@@ -225,6 +225,5 @@ export const exportJson = onCall(
       console.error('JSON出力エラー:', error);
       throw new Error(`JSON出力に失敗しました: ${error.message}`);
     }
-  },
+  }
 );
-
