@@ -173,7 +173,7 @@ const openStepModal = (
   goalId: string,
   stepPath: string[] = [],
   stepId?: string,
-  title?: string,
+  title?: string
 ) => {
   editingStep.value = {
     goalId,
@@ -208,7 +208,7 @@ const saveStep = async () => {
         editingStep.value.goalId,
         editingStep.value.stepId,
         { title: stepTitle.value },
-        editingStep.value.stepPath,
+        editingStep.value.stepPath
       );
     } else {
       // 追加
@@ -217,7 +217,7 @@ const saveStep = async () => {
         selectedCategoryId.value,
         editingStep.value.goalId,
         { title: stepTitle.value },
-        editingStep.value.stepPath,
+        editingStep.value.stepPath
       );
     }
     closeStepModal();
@@ -234,7 +234,7 @@ const saveStep = async () => {
 const handleDeleteStep = async (
   goalId: string,
   stepId: string,
-  stepPath: string[] = [],
+  stepPath: string[] = []
 ) => {
   if (!confirm("このステップを削除しますか？")) {
     return;
@@ -246,7 +246,7 @@ const handleDeleteStep = async (
       selectedCategoryId.value,
       goalId,
       stepId,
-      stepPath,
+      stepPath
     );
     await fetchRoadmapData();
   } catch (err: any) {
@@ -262,7 +262,7 @@ const openTodoModal = (
   todoId?: string,
   task?: string,
   isFinished?: boolean,
-  weight?: number,
+  weight?: number
 ) => {
   editingTodo.value = {
     goalId,
@@ -309,7 +309,7 @@ const saveTodo = async () => {
         editingTodo.value.goalId,
         editingTodo.value.todoId,
         todoData,
-        editingTodo.value.stepPath,
+        editingTodo.value.stepPath
       );
     } else {
       // 追加
@@ -318,7 +318,7 @@ const saveTodo = async () => {
         selectedCategoryId.value,
         editingTodo.value.goalId,
         todoData,
-        editingTodo.value.stepPath,
+        editingTodo.value.stepPath
       );
     }
     closeTodoModal();
@@ -346,6 +346,71 @@ const closeGoalModal = () => {
   showGoalModal.value = false;
   editingGoal.value = null;
   goalTitle.value = "";
+  useAiGeneration.value = false;
+  generating.value = false;
+  generationProgress.value = "";
+};
+
+// AIでタスクリストを生成
+const generateWithAi = async () => {
+  if (!goalTitle.value.trim()) {
+    return;
+  }
+
+  try {
+    generating.value = true;
+    generationProgress.value = "AIがタスクリストを生成中...";
+
+    // Gemini APIを呼び出してタスクリストを生成
+    const { $functions } = useNuxtApp();
+    const { httpsCallable } = await import("firebase/functions");
+
+    const generateTaskListFromPrompt = httpsCallable(
+      $functions as any,
+      "api_gemini_generateTaskListFromPrompt"
+    );
+
+    const result = await generateTaskListFromPrompt({
+      prompt: goalTitle.value,
+    });
+
+    const resultData = result.data as any;
+    if (!resultData.success) {
+      throw new Error("タスクリストの生成に失敗しました");
+    }
+
+    generationProgress.value = "生成完了！Firestoreにインポート中...";
+
+    // 生成されたデータをFirestoreにインポート
+    const importJson = httpsCallable(
+      $functions as any,
+      "api_fireStore_importJson"
+    );
+    const importResult = await importJson({
+      userId,
+      categoryId: selectedCategoryId.value,
+      goalData: resultData.data,
+    });
+
+    const importData = importResult.data as any;
+    if (!importData.success) {
+      throw new Error("データのインポートに失敗しました");
+    }
+
+    generationProgress.value = "完了しました！";
+
+    // モーダルを閉じてデータを再取得
+    setTimeout(async () => {
+      closeGoalModal();
+      await fetchRoadmapData();
+    }, 500);
+  } catch (err: any) {
+    console.error("Error generating with AI:", err);
+    error.value = err?.message || "AI生成に失敗しました";
+    generationProgress.value = "";
+  } finally {
+    generating.value = false;
+  }
 };
 
 // 目標を保存
@@ -364,7 +429,7 @@ const saveGoal = async () => {
         editingGoal.value.goalId,
         {
           title: goalTitle.value,
-        },
+        }
       );
     } else {
       // 追加
@@ -387,7 +452,7 @@ const saveGoal = async () => {
 const handleDeleteGoal = async (goalId: string) => {
   if (
     !confirm(
-      "この目標を削除しますか？目標配下のすべてのステップとタスクも削除されます。",
+      "この目標を削除しますか？目標配下のすべてのステップとタスクも削除されます。"
     )
   ) {
     return;
@@ -410,7 +475,7 @@ const toggleTodoCompletion = async (
   goalId: string,
   todoId: string,
   stepPath: string[],
-  currentStatus: boolean,
+  currentStatus: boolean
 ) => {
   try {
     saving.value = true;
@@ -420,7 +485,7 @@ const toggleTodoCompletion = async (
       goalId,
       todoId,
       { isFinished: !currentStatus },
-      stepPath,
+      stepPath
     );
 
     // 達成率を再計算
@@ -466,7 +531,7 @@ const toggleTodoCompletion = async (
         // Step配下のtodo
         const findAndUpdateTodo = (
           steps: StepWithChildren[],
-          path: string[],
+          path: string[]
         ): boolean => {
           if (path.length === 0) return false;
           const step = steps.find((s) => s.id === path[0]);
@@ -505,7 +570,7 @@ const toggleTodoCompletion = async (
 const handleDeleteTodo = async (
   goalId: string,
   todoId: string,
-  stepPath: string[] = [],
+  stepPath: string[] = []
 ) => {
   if (!confirm("このタスクを削除しますか？")) {
     return;
@@ -517,7 +582,7 @@ const handleDeleteTodo = async (
       selectedCategoryId.value,
       goalId,
       todoId,
-      stepPath,
+      stepPath
     );
 
     // UIから直接削除（即座に反映）
@@ -540,7 +605,7 @@ const handleDeleteTodo = async (
         // Step配下のtodoを再帰的に検索して削除
         const removeTodoFromSteps = (
           steps: StepWithChildren[],
-          path: string[],
+          path: string[]
         ): boolean => {
           if (path.length === 0) {
             console.warn("Empty path when trying to remove todo from steps");
@@ -565,7 +630,7 @@ const handleDeleteTodo = async (
                 console.warn(
                   "Todo not found in step todos:",
                   todoId,
-                  step.title,
+                  step.title
                 );
               }
             } else {
@@ -746,7 +811,7 @@ const handleDeleteTodo = async (
             todoId: string,
             task: string,
             isFinished: boolean,
-            weight?: number,
+            weight?: number
           ) => openTodoModal(goalId, [], todoId, task, isFinished, weight)
         "
         @delete-todo="
@@ -781,7 +846,7 @@ const handleDeleteTodo = async (
             todoId: string,
             task: string,
             isFinished: boolean,
-            weight?: number,
+            weight?: number
           ) => openTodoModal(goalId, stepPath, todoId, task, isFinished, weight)
         "
         @delete-todo-in-step="
@@ -793,7 +858,7 @@ const handleDeleteTodo = async (
             goalId: string,
             stepPath: string[],
             todoId: string,
-            currentStatus: boolean,
+            currentStatus: boolean
           ) => toggleTodoCompletion(goalId, todoId, stepPath, currentStatus)
         "
       />
