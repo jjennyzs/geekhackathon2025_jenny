@@ -140,10 +140,6 @@ const useAiGeneration = ref(false);
 const generating = ref(false);
 const generationProgress = ref("");
 
-// AI自動生成関連の状態
-const useAiGeneration = ref(false);
-const generating = ref(false);
-const generationProgress = ref("");
 
 // Firestoreからデータを取得
 const fetchRoadmapData = async () => {
@@ -157,8 +153,6 @@ const fetchRoadmapData = async () => {
     // カテゴリ達成率を取得
     const ratio = await getCategoryRatio(userId, selectedCategoryId.value);
     categoryRatio.value = ratio;
-    // 初期値を最新に合わせる（初回ロードで音が鳴らないように）
-    prevCategoryRatio.value = ratio;
   } catch (err: any) {
     console.error("Error fetching roadmap data:", err);
     error.value = err?.message || "ロードマップデータの取得に失敗しました";
@@ -425,7 +419,7 @@ const generateWithAi = async () => {
 
 // 目標を保存
 const saveGoal = async () => {
-  if (!goalTitle.value.trim()) {
+  if (!goalTitle.value?.trim()) {
     return;
   }
 
@@ -990,8 +984,7 @@ const handleDeleteTodo = async (
           <button
             v-if="useAiGeneration"
             class="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
-            :%
-            :disabled="generating || !goalTitle.trim()"
+            :disabled="generating || !(goalTitle || '').trim()"
             @click="saveGoal"
           >
             {{ generating ? "生成中..." : "生成" }}
@@ -999,7 +992,7 @@ const handleDeleteTodo = async (
           <button
             v-else
             class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-            :disabled="saving || !goalTitle.trim()"
+            :disabled="saving || !(goalTitle || '').trim()"
             @click="saveGoal"
           >
             {{ saving ? "保存中..." : "保存" }}
