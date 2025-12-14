@@ -522,6 +522,25 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         {{ props.goal.ratio }}%
       </span>
     </div>
+    
+    <!-- 賭け金・返金情報 -->
+    <div v-if="props.goal.betAmount && props.goal.isLocked" class="mt-3 space-y-1">
+      <div class="flex items-center gap-4 text-sm text-gray-700">
+        <div class="flex items-center gap-1">
+          <span class="font-medium">賭けた金額:</span>
+          <span class="font-bold" :style="{ color: props.progressColor || '#111827' }">
+            ¥{{ props.goal.betAmount.toLocaleString() }}
+          </span>
+        </div>
+        <div v-if="refundedAmount > 0" class="flex items-center gap-1">
+          <span class="font-medium">返金済み:</span>
+          <span class="font-bold text-green-600">
+            ¥{{ refundedAmount.toLocaleString() }}
+          </span>
+          <span class="text-xs text-gray-500">({{ refundedPercentage }}%)</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -554,7 +573,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
           <button
             class="p-2 hover:bg-gray-100 rounded"
             :disabled="saving"
-            @click="$emit('delete-goal', props.goal.id, props.goal.title)">
+            @click="$emit('delete-goal', props.goal.id)">
           <img
             src="../icons/delete.svg"
             alt="削除"
