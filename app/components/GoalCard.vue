@@ -180,6 +180,10 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
       type: Boolean,
       default: false,
     },
+    saving: {
+      type: Boolean,
+      default: false,
+    },
     onEditStep: {
       type: Function as PropType<
         (
@@ -244,6 +248,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         goalId,
         stepPath,
         isGoalLocked,
+        saving,
         onEditStep,
         onDeleteStep,
         onAddSubStep,
@@ -357,14 +362,15 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                         type: "checkbox",
                         class: "mr-3 h-4 w-4 cursor-pointer rounded-full accent-gray-300",
                         checked: todo.isFinished,
-                        disabled: isGoalLocked,
-                        onClick: () =>
+                        disabled: saving,
+                        onChange: () => {
                           onToggleTodo(
                             goalId,
                             currentStepPath,
                             todo.id,
                             todo.isFinished,
-                          ),
+                          );
+                        },
                       }),
                       h("span", {}, todo.task),
                       todo.weight !== undefined &&
@@ -607,7 +613,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         class="mr-3 h-4 w-4 cursor-pointer rounded-full accent-gray-300"
         :checked="todo.isFinished"
         :disabled="saving"
-        @click="$emit('toggle-todo', goal.id, todo.id, todo.isFinished)"
+        @change="$emit('toggle-todo', goal.id, todo.id, todo.isFinished)"
       >
     </input>
       <span>{{ todo.task }}</span>
@@ -668,6 +674,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
           :goal-id="goal.id"
           :step-path="[]"
           :is-goal-locked="goal.isLocked || false"
+          :saving="saving"
           :on-edit-step="
             (
               goalId: string,
