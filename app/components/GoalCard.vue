@@ -381,7 +381,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                         h(
                           "span",
                           { class: "ml-2 text-xs text-gray-500" },
-                          `(重み: ${todo.weight})`,
+                          
                         ),
                     ]),
                     !isGoalLocked &&
@@ -602,8 +602,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
       >
     </input>
       <span>{{ todo.task }}</span>
-      <span v-if="todo.weight !== undefined" class="ml-2 text-xs text-gray-500">
-        (重み: {{ todo.weight }})</span>
+     
     </div>
     <div class="flex gap">
           <button

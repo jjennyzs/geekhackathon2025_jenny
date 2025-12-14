@@ -1030,7 +1030,7 @@ const handleDeleteTodo = async (
               <span class="text-sm font-medium text-gray-700">完了済み</span>
             </label>
           </div>
-          <div>
+          <!-- <div>
             <label class="mb-2 block text-sm font-medium text-gray-700">
               重み（オプション）
             </label>
@@ -1042,7 +1042,7 @@ const handleDeleteTodo = async (
               class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="重みを入力"
             />
-          </div>
+          </div> -->
         </div>
         <div class="mt-6 flex justify-end gap-3">
           <button
