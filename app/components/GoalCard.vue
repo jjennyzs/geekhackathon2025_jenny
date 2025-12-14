@@ -180,6 +180,10 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
       type: Boolean,
       default: false,
     },
+    saving: {
+      type: Boolean,
+      default: false,
+    },
     onEditStep: {
       type: Function as PropType<
         (
@@ -244,6 +248,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         goalId,
         stepPath,
         isGoalLocked,
+        saving,
         onEditStep,
         onDeleteStep,
         onAddSubStep,
@@ -338,44 +343,35 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
             h(
               "div",
               {
-                class: "mt-2 ml-4 space-y-1",
+                class: "ml-2 space-y-1 border-l-4 pl-2",
               },
               step.todos.map((todo: TodoWithId) =>
                 h(
                   "div",
                   {
                     key: todo.id,
-                    class: `text-sm px-2 py-1 rounded border-l-2 flex items-center justify-between group ${
+                    class: `text-sm px-3 py-2 rounded-full flex items-center justify-between group ${
                       todo.isFinished
                         ? "text-gray-500 bg-gray-50 border-gray-300 line-through"
-                        : "text-gray-600 bg-blue-50 border-blue-300"
+                        : "text-gray-600 bg-green-50 border-green-300"
                     }`,
                   },
                   [
                     h("div", { class: "flex items-center flex-1" }, [
-                    h(
-                      "button",
-                      {
-                        class: `mr-2 px-2 py-1 text-xs rounded ${
-                          todo.isFinished
-                            ? "bg-green-500 text-white hover:bg-green-600"
-                            : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-                        }`,
-                        onClick: () =>
+                      h("input", {
+                        type: "checkbox",
+                        class: "mr-3 h-4 w-4 cursor-pointer rounded-full accent-gray-300",
+                        checked: todo.isFinished,
+                        disabled: saving,
+                        onChange: () => {
                           onToggleTodo(
                             goalId,
                             currentStepPath,
                             todo.id,
                             todo.isFinished,
-                          ),
-                      },
-                      todo.isFinished ? "✓ 完了" : "未完了",
-                    ),
-                      h(
-                        "span",
-                        { class: "font-semibold text-blue-700 mr-2" },
-                        todo.isFinished ? "✓ DONE: " : "TODO: ",
-                      ),
+                          );
+                        },
+                      }),
                       h("span", {}, todo.task),
                       todo.weight !== undefined &&
                         h(
@@ -522,6 +518,25 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         {{ props.goal.ratio }}%
       </span>
     </div>
+    
+    <!-- 賭け金・返金情報 -->
+    <div v-if="props.goal.betAmount && props.goal.isLocked" class="mt-3 space-y-1">
+      <div class="flex items-center gap-4 text-sm text-gray-700">
+        <div class="flex items-center gap-1">
+          <span class="font-medium">賭けた金額:</span>
+          <span class="font-bold" :style="{ color: props.progressColor || '#111827' }">
+            ¥{{ props.goal.betAmount.toLocaleString() }}
+          </span>
+        </div>
+        <div v-if="refundedAmount > 0" class="flex items-center gap-1">
+          <span class="font-medium">返金済み:</span>
+          <span class="font-bold text-green-600">
+            ¥{{ refundedAmount.toLocaleString() }}
+          </span>
+          <span class="text-xs text-gray-500">({{ refundedPercentage }}%)</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -554,7 +569,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
           <button
             class="p-2 hover:bg-gray-100 rounded"
             :disabled="saving"
-            @click="$emit('delete-goal', props.goal.id, props.goal.title)">
+            @click="$emit('delete-goal', props.goal.id)">
           <img
             src="../icons/delete.svg"
             alt="削除"
@@ -598,7 +613,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
         class="mr-3 h-4 w-4 cursor-pointer rounded-full accent-gray-300"
         :checked="todo.isFinished"
         :disabled="saving"
-        @click="$emit('toggle-todo', goal.id, todo.id, todo.isFinished)"
+        @change="$emit('toggle-todo', goal.id, todo.id, todo.isFinished)"
       >
     </input>
       <span>{{ todo.task }}</span>
@@ -659,6 +674,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
           :goal-id="goal.id"
           :step-path="[]"
           :is-goal-locked="goal.isLocked || false"
+          :saving="saving"
           :on-edit-step="
             (
               goalId: string,
