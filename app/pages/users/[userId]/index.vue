@@ -310,6 +310,9 @@ const todoIsFinished = ref(false);
 const todoWeight = ref<number | undefined>(undefined);
 const goalTitle = ref("");
 const saving = ref(false);
+const useAiGeneration = ref(false);
+const generating = ref(false);
+const generationProgress = ref("");
 
 // Firestoreからデータを取得
 const fetchRoadmapData = async () => {
@@ -589,6 +592,12 @@ const generateWithAi = async () => {
 // 目標を保存
 const saveGoal = async () => {
   if (!goalTitle.value.trim()) {
+    return;
+  }
+
+  // AI生成が有効な場合、AI生成を実行して終了
+  if (useAiGeneration.value && !editingGoal.value?.goalId) {
+    await generateWithAi();
     return;
   }
 
@@ -1108,7 +1117,25 @@ const handleDeleteTodo = async (
             type="text"
             class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="目標のタイトルを入力"
+            :disabled="generating"
           />
+        </div>
+        <div v-if="!editingGoal?.goalId" class="mb-4">
+          <label class="flex items-center">
+            <input
+              v-model="useAiGeneration"
+              type="checkbox"
+              class="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+              :disabled="generating || saving"
+            />
+            <span class="text-sm font-medium text-gray-700">AIで生成</span>
+          </label>
+          <p v-if="useAiGeneration" class="mt-1 text-xs text-gray-500">
+            AIが目標タイトルからロードマップを自動生成します
+          </p>
+        </div>
+        <div v-if="generating && generationProgress" class="mb-4">
+          <p class="text-sm text-blue-600">{{ generationProgress }}</p>
         </div>
         <div class="flex justify-end gap-3">
           <button
@@ -1119,11 +1146,11 @@ const handleDeleteTodo = async (
             キャンセル
           </button>
           <button
-            class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-            :disabled="saving || !goalTitle.trim()"
+            class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
+            :disabled="saving || generating || !goalTitle.trim()"
             @click="saveGoal"
           >
-            {{ saving ? "保存中..." : "保存" }}
+            {{ generating ? "生成中..." : saving ? "保存中..." : useAiGeneration && !editingGoal?.goalId ? "AIで生成" : "保存" }}
           </button>
         </div>
       </div>
