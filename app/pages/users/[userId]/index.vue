@@ -928,6 +928,8 @@ const handleDeleteTodo = async (
         :key="goal.id"
         :goal="goal"
         :saving="saving"
+        :progress-bg="categoryMeta[selectedCategoryId]?.progressBg"
+        :progress-color="categoryMeta[selectedCategoryId]?.color"
         @edit-goal="openGoalModal"
         @delete-goal="handleDeleteGoal"
         @add-step="(goalId: string) => openStepModal(goalId)"

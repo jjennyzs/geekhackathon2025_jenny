@@ -28,6 +28,10 @@ type GoalWithSteps = {
 const props = defineProps<{
   goal: GoalWithSteps;
   saving: boolean;
+  // カテゴリに応じた進捗バーのグラデーション背景
+  progressBg?: string;
+  // カテゴリのテーマカラー（パーセンテージの文字色に使用）
+  progressColor?: string;
 }>();
 
 // Emits
@@ -417,28 +421,28 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
 </script>
 
 <template>
-  <div class="goal-card rounded-lg bg-white p-6 shadow-md">
+  <div class="goal-card rounded-lg bg-white p-6 shadow-md" :style="{ borderTop: `4px solid ${props.progressColor || '#FF3159'}`, borderRadius: '0.9375rem' }">
     <div class="goal-header mb-4 border-b pb-4">
       <div class="flex items-center justify-between">
-        <div>
+        <div class="flex-1 w-full">
   <h2 class="text-2xl font-bold text-gray-900">
     {{ props.goal.title }}
   </h2>
 
-  <div class="mt-2">
-    <div class="flex items-center gap-3">
+  <div class="mt-2 w-full">
+    <div class="flex items-center gap-1 w-full">
       <!-- 進捗バー -->
-      <div class="flex-1">
-        <div class="w-full bg-gray-200 rounded h-3">
+      <div class="w-[60%]">
+        <div class="w-full bg-gray-200 rounded h-3 overflow-hidden">
           <div
-            class="h-3 bg-blue-500 rounded transition-all duration-300"
-            :style="{ width: props.goal.ratio + '%' }"
+            class="h-3 rounded transition-all duration-300"
+            :style="{ width: props.goal.ratio + '%', background: props.progressBg || 'linear-gradient(90deg, #4FA3FF 0%, #00B7DC 100%)' }"
           />
         </div>
       </div>
 
       <!-- 進捗率 -->
-      <span class="text-sm font-semibold whitespace-nowrap">
+      <span class="ml-2 text-sm font-semibold whitespace-nowrap" :style="{ color: props.progressColor || '#111827' }">
         {{ props.goal.ratio }}%
       </span>
     </div>
@@ -482,7 +486,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
     class="rounded bg-blue-100 px-3 py-1 text-sm text-blue-600 hover:bg-blue-300"
     @click="$emit('add-step', goal.id)"
   >
-    + 目標追加
+    + 中目標
   </button>
 </div>
 
