@@ -68,6 +68,19 @@
       login();
     }
   };
+
+  // ログアウト処理
+  const logout = async () => {
+    try {
+      const { signOut } = await import("firebase/auth");
+      await signOut($auth);
+      // ログアウト後、ログインページにリダイレクト
+      router.push("/login");
+    } catch (err: any) {
+      console.error("ログアウトエラー:", err);
+      error.value = "ログアウトに失敗しました: " + (err.message || "不明なエラー");
+    }
+  };
   </script>
   
   <template>
@@ -79,6 +92,19 @@
       >
         <h1 class="text-2xl font-bold text-gray-800">ようこそ</h1>
         <p class="text-gray-600">ログイン方法を選択してください</p>
+        
+        <!-- 既にログインしている場合の表示 -->
+        <div v-if="currentUser" class="rounded-lg bg-blue-50 p-4">
+          <p class="mb-2 text-sm text-gray-700">
+            <span class="font-semibold">{{ currentUser.displayName || currentUser.email }}</span> としてログイン中
+          </p>
+          <button
+            class="w-full rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
+            @click="logout"
+          >
+            ログアウト
+          </button>
+        </div>
   
         <div class="space-y-4">
           <!-- Googleログインボタン -->
