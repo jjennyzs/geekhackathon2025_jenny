@@ -140,7 +140,6 @@ const useAiGeneration = ref(false);
 const generating = ref(false);
 const generationProgress = ref("");
 
-
 // Firestoreからデータを取得
 const fetchRoadmapData = async () => {
   try {
@@ -810,6 +809,8 @@ const handleDeleteTodo = async (
         :key="goal.id"
         :goal="goal"
         :saving="saving"
+        :progress-bg="categoryMeta[selectedCategoryId]?.progressBg"
+        :progress-color="categoryMeta[selectedCategoryId]?.color"
         :category-id="selectedCategoryId"
         @edit-goal="openGoalModal"
         @delete-goal="handleDeleteGoal"
