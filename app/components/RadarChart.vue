@@ -1,7 +1,6 @@
 <script setup lang="ts">
-
-import { ref, computed, onMounted } from 'vue';
-import { Radar } from 'vue-chartjs';
+import { ref, computed, onMounted } from "vue";
+import { Radar } from "vue-chartjs";
 import {
   Chart as ChartJS,
   Title,
@@ -11,10 +10,18 @@ import {
   PointElement,
   LineElement,
   Filler,
-} from 'chart.js';
-import { useFireStore } from '#imports';
+} from "chart.js";
+import { useFireStore } from "#imports";
 
-ChartJS.register(Title, Tooltip, Legend, RadialLinearScale, PointElement, LineElement, Filler);
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+);
 
 const { getCategoryRatio } = useFireStore();
 
@@ -58,7 +65,7 @@ const fetchCategoryRatios = async () => {
     console.error("Error fetching category ratios:", error);
     // エラー時はデフォルト値を設定
     progress.value = props.chartData?.progress ?? [0, 0, 0, 0];
-    labels.value = props.chartData?.labels ?? categories.map(c => c.label);
+    labels.value = props.chartData?.labels ?? categories.map((c) => c.label);
   }
 };
 
@@ -68,38 +75,50 @@ onMounted(() => {
 });
 
 const chartData = computed(() => ({
-  labels: labels.value.length > 0 ? labels.value : (props.chartData?.labels ?? categories.map(c => c.label)),
+  labels:
+    labels.value.length > 0
+      ? labels.value
+      : (props.chartData?.labels ?? categories.map((c) => c.label)),
   datasets: [
     {
-      label: '達成率',
-      data: progress.value.length > 0 ? progress.value : (props.chartData?.progress ?? [0, 0, 0, 0]),
-      backgroundColor: 'rgba(54, 162, 235, 0.2)',
-      borderColor: 'rgba(54, 162, 235, 1)',
-      pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+      label: "達成率",
+      data:
+        progress.value.length > 0
+          ? progress.value
+          : (props.chartData?.progress ?? [0, 0, 0, 0]),
+      backgroundColor: "rgba(54, 162, 235, 0.2)",
+      borderColor: "rgba(54, 162, 235, 1)",
+      pointBackgroundColor: "rgba(54, 162, 235, 1)",
     },
   ],
 }));
 
 const config = {
-  type: 'radar',
+  type: "radar",
   options: {
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
     elements: {
       line: {
-        borderWidth: 3
-      }
+        borderWidth: 3,
+      },
     },
     scales: {
       r: {
         beginAtZero: true,
         max: 100,
-      }
-    }
+      },
+    },
   },
 };
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col items-center">
+    <p class="mb-6 text-center text-2xl font-bold text-gray-800">達成率</p>
     <Radar :data="chartData" :options="config.options" />
   </div>
 </template>

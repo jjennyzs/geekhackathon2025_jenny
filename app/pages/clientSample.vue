@@ -52,7 +52,7 @@ const exportJson = async () => {
     console.log("関数を呼び出します: api_fireStore_exportJson");
     const exportJsonFunction = httpsCallable(
       functions,
-      "api_fireStore_exportJson"
+      "api_fireStore_exportJson",
     );
 
     const result = await exportJsonFunction({
@@ -138,7 +138,7 @@ const importJson = async () => {
     console.log("関数を呼び出します: api_fireStore_importJson");
     const importJsonFunction = httpsCallable(
       functions,
-      "api_fireStore_importJson"
+      "api_fireStore_importJson",
     );
 
     const result = await importJsonFunction({
