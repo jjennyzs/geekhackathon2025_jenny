@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import type { TodoDoc } from "../../../../@types/todoDoc";
 import GoalCard from "~/components/GoalCard.vue";
@@ -136,6 +136,9 @@ const todoIsFinished = ref(false);
 const todoWeight = ref<number | undefined>(undefined);
 const goalTitle = ref("");
 const saving = ref(false);
+const useAiGeneration = ref(false);
+const generating = ref(false);
+const generationProgress = ref("");
 
 // AI自動生成関連の状態
 const useAiGeneration = ref(false);
@@ -154,6 +157,8 @@ const fetchRoadmapData = async () => {
     // カテゴリ達成率を取得
     const ratio = await getCategoryRatio(userId, selectedCategoryId.value);
     categoryRatio.value = ratio;
+    // 初期値を最新に合わせる（初回ロードで音が鳴らないように）
+    prevCategoryRatio.value = ratio;
   } catch (err: any) {
     console.error("Error fetching roadmap data:", err);
     error.value = err?.message || "ロードマップデータの取得に失敗しました";
@@ -727,7 +732,7 @@ const handleDeleteTodo = async (
             class="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
             @click="() => openGoalModal()"
           >
-            + 目標を追加
+            + 目標
           </button>
           <NavigationButtons :user-id="userId" />
         </div>
@@ -773,8 +778,8 @@ const handleDeleteTodo = async (
           </div>
           {{ categoryMeta[selectedCategoryId]?.label }} {{ categoryRatio }}%
         </h2>
-        <div class="mt-3">
-          <div class="progress-track">
+        <div class="mt-3 flex items-center gap-3">
+          <div class="progress-track flex-1">
             <div
               class="progress-fill"
               :style="{
@@ -1082,14 +1087,15 @@ const handleDeleteTodo = async (
 }
 
 .category-icon-circle {
-  width: 2.875rem; /* ~46px */
-  height: 2.875rem;
+  width: 3.5rem; /* ~56px */
+  height: 3.5rem;
   border-radius: 9999px;
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+  animation: icon-bob 2.4s ease-in-out infinite;
 }
 
 .category-icon-circle svg {

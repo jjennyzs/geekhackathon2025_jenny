@@ -19,6 +19,8 @@ interface FunctionsObj {
 const funcs = {
   // API
   api_fireStore_exportJson: "./api/fireStore/exportJson",
+  api_fireStore_importJson: "./api/fireStore/importJson",
+  api_gemini_generateTaskListFromPrompt: "./api/gemini/generate",
   api_stripe_createGoalPaymentSession: "./api/stripe/createGoalPaymentSession",
   api_stripe_verifyAndLockGoal: "./api/stripe/verifyAndLockGoal",
   api_stripe_processRefundForGoal: "./api/stripe/processRefundForGoal",
@@ -36,6 +38,10 @@ const loadFunctions = (functionsObj: FunctionsObj) => {
       // ES modulesのexport形式に対応（名前付きエクスポート）
       if (importedModule.exportJson) {
         module.exports[functionName] = importedModule.exportJson;
+      } else if (importedModule.importJson) {
+        module.exports[functionName] = importedModule.importJson;
+      } else if (importedModule.generateTaskListFromPrompt) {
+        module.exports[functionName] = importedModule.generateTaskListFromPrompt;
       } else if (importedModule.createGoalPaymentSession) {
         module.exports[functionName] = importedModule.createGoalPaymentSession;
       } else if (importedModule.verifyAndLockGoal) {

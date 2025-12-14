@@ -1,5 +1,5 @@
-import * as admin from "firebase-admin";
-import { onCall } from "firebase-functions/v2/https";
+import * as admin from 'firebase-admin';
+import { onCall } from 'firebase-functions/v2/https';
 
 // admin.initializeApp()が呼ばれた後にfirestore()を取得する
 const getDb = () => admin.firestore();
@@ -41,11 +41,6 @@ interface GoalWithSteps {
 
 /**
  * 再帰的にステップを取得する関数
- * @param {string} userId - ユーザーID
- * @param {string} categoryId - カテゴリID
- * @param {string} goalId - 目標ID
- * @param {string[]} parentPath - 親ステップのパス
- * @return {Promise<StepWithChildren[]>} ステップの配列
  */
 async function getStepsRecursively(
   userId: string,
@@ -56,20 +51,20 @@ async function getStepsRecursively(
   try {
     const db = getDb();
     let docRef: admin.firestore.DocumentReference = db
-      .collection("users")
+      .collection('users')
       .doc(userId)
-      .collection("category")
+      .collection('category')
       .doc(categoryId)
-      .collection("goals")
+      .collection('goals')
       .doc(goalId);
 
     // 親ステップのパスを追加
     for (const stepId of parentPath) {
-      docRef = docRef.collection("steps").doc(stepId);
+      docRef = docRef.collection('steps').doc(stepId);
     }
 
     // 最後に"steps"コレクションを参照
-    const stepsRef = docRef.collection("steps");
+    const stepsRef = docRef.collection('steps');
     const stepsSnap = await stepsRef.get();
 
     // 各ステップに対して再帰的に子ステップを取得
@@ -103,18 +98,13 @@ async function getStepsRecursively(
 
     return steps;
   } catch (error) {
-    console.error("Error fetching steps recursively:", error);
+    console.error('Error fetching steps recursively:', error);
     return [];
   }
 }
 
 /**
  * todoコレクションを取得する関数
- * @param {string} userId - ユーザーID
- * @param {string} categoryId - カテゴリID
- * @param {string} goalId - 目標ID
- * @param {string[]} stepPath - ステップのパス（空の場合はgoalId配下のtodoを取得）
- * @return {Promise<TodoWithId[]>} todoの配列
  */
 async function getTodos(
   userId: string,
@@ -125,20 +115,20 @@ async function getTodos(
   try {
     const db = getDb();
     let todosRef: admin.firestore.DocumentReference = db
-      .collection("users")
+      .collection('users')
       .doc(userId)
-      .collection("category")
+      .collection('category')
       .doc(categoryId)
-      .collection("goals")
+      .collection('goals')
       .doc(goalId);
 
     // ステップのパスを追加
     for (const stepId of stepPath) {
-      todosRef = todosRef.collection("steps").doc(stepId);
+      todosRef = todosRef.collection('steps').doc(stepId);
     }
 
     // 最後に"todo"コレクションを参照
-    const todosRefCollection = todosRef.collection("todo");
+    const todosRefCollection = todosRef.collection('todo');
     const todosSnap = await todosRefCollection.get();
     const todos: TodoWithId[] = todosSnap.docs.map((todoDoc) => {
       const data = todoDoc.data() as TodoDoc;
@@ -159,10 +149,6 @@ async function getTodos(
 
 /**
  * 目標とそのすべてのステップ階層を取得する関数
- * @param {string} userId - ユーザーID
- * @param {string} categoryId - カテゴリID
- * @param {string} goalId - 目標ID
- * @return {Promise<GoalWithSteps>} 目標とステップ階層
  */
 async function getGoalWithAllSteps(
   userId: string,
@@ -173,11 +159,11 @@ async function getGoalWithAllSteps(
     const db = getDb();
     // 目標を取得
     const goalRef = db
-      .collection("users")
+      .collection('users')
       .doc(userId)
-      .collection("category")
+      .collection('category')
       .doc(categoryId)
-      .collection("goals")
+      .collection('goals')
       .doc(goalId);
     const goalSnap = await goalRef.get();
 
@@ -206,7 +192,7 @@ async function getGoalWithAllSteps(
       todos: todos.length > 0 ? todos : undefined,
     };
   } catch (error) {
-    console.error("Error fetching goal with all steps:", error);
+    console.error('Error fetching goal with all steps:', error);
     throw error;
   }
 }
@@ -216,14 +202,17 @@ async function getGoalWithAllSteps(
  */
 export const exportJson = onCall(
   {
-    cors: ["http://localhost:3000", "http://127.0.0.1:3000"],
-    region: "asia-northeast1",
+    cors: [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+    ],
+    region: 'asia-northeast1',
   },
   async (request) => {
     const { userId, categoryId, goalId } = request.data;
 
     if (!userId || !categoryId || !goalId) {
-      throw new Error("userId, categoryId, goalIdは必須です");
+      throw new Error('userId, categoryId, goalIdは必須です');
     }
 
     try {
@@ -233,7 +222,7 @@ export const exportJson = onCall(
         data: goalData,
       };
     } catch (error: any) {
-      console.error("JSON出力エラー:", error);
+      console.error('JSON出力エラー:', error);
       throw new Error(`JSON出力に失敗しました: ${error.message}`);
     }
   }
