@@ -338,29 +338,26 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
             h(
               "div",
               {
-                class: "mt-2 ml-4 space-y-1",
+                class: "ml-2 space-y-1 border-l-4 pl-2",
               },
               step.todos.map((todo: TodoWithId) =>
                 h(
                   "div",
                   {
                     key: todo.id,
-                    class: `text-sm px-2 py-1 rounded border-l-2 flex items-center justify-between group ${
+                    class: `text-sm px-3 py-2 rounded-full flex items-center justify-between group ${
                       todo.isFinished
                         ? "text-gray-500 bg-gray-50 border-gray-300 line-through"
-                        : "text-gray-600 bg-blue-50 border-blue-300"
+                        : "text-gray-600 bg-green-50 border-green-300"
                     }`,
                   },
                   [
                     h("div", { class: "flex items-center flex-1" }, [
-                    h(
-                      "button",
-                      {
-                        class: `mr-2 px-2 py-1 text-xs rounded ${
-                          todo.isFinished
-                            ? "bg-green-500 text-white hover:bg-green-600"
-                            : "bg-gray-300 text-gray-700 hover:bg-gray-400"
-                        }`,
+                      h("input", {
+                        type: "checkbox",
+                        class: "mr-3 h-4 w-4 cursor-pointer rounded-full accent-gray-300",
+                        checked: todo.isFinished,
+                        disabled: isGoalLocked,
                         onClick: () =>
                           onToggleTodo(
                             goalId,
@@ -368,14 +365,7 @@ const RoadmapStep: ReturnType<typeof defineComponent> = defineComponent({
                             todo.id,
                             todo.isFinished,
                           ),
-                      },
-                      todo.isFinished ? "✓ 完了" : "未完了",
-                    ),
-                      h(
-                        "span",
-                        { class: "font-semibold text-blue-700 mr-2" },
-                        todo.isFinished ? "✓ DONE: " : "TODO: ",
-                      ),
+                      }),
                       h("span", {}, todo.task),
                       todo.weight !== undefined &&
                         h(
