@@ -1,11 +1,15 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 import Stripe from "stripe";
+import * as functions from "firebase-functions";
 
 // Stripeの初期化
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-11-17.clover",
-});
+const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY || functions.config().stripe_secret_key?.key,
+  {
+    apiVersion: "2025-02-24.acacia",
+  }
+);
 
 const getDb = () => admin.firestore();
 
@@ -50,7 +54,7 @@ export const handleGoalPaymentWebhook = onRequest(
       event = stripe.webhooks.constructEvent(
         rawBody,
         sig,
-        webhookSecret,
+        webhookSecret
       ) as Stripe.Event;
     } catch (err: any) {
       console.error("Webhook signature verification failed:", err.message);
@@ -89,7 +93,7 @@ export const handleGoalPaymentWebhook = onRequest(
         });
 
         console.log(
-          `Goal ${goalId} locked after successful payment for user ${userId}`,
+          `Goal ${goalId} locked after successful payment for user ${userId}`
         );
         res.status(200).send({ received: true });
       } catch (error: any) {
@@ -99,5 +103,5 @@ export const handleGoalPaymentWebhook = onRequest(
     } else {
       res.status(200).send({ received: true });
     }
-  },
+  }
 );

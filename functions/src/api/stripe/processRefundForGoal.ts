@@ -2,17 +2,19 @@ import * as admin from "firebase-admin";
 import { onCall } from "firebase-functions/v2/https";
 import Stripe from "stripe";
 import { FieldValue } from "firebase-admin/firestore";
+import * as functions from "firebase-functions";
 
 const getDb = () => admin.firestore();
 
 // Stripeの初期化（環境変数が設定されている場合のみ）
 const getStripe = () => {
-  const apiKey = process.env.STRIPE_SECRET_KEY;
+  const apiKey =
+    process.env.STRIPE_SECRET_KEY || functions.config().stripe_secret_key?.key;
   if (!apiKey) {
     throw new Error("STRIPE_SECRET_KEY is not configured");
   }
   return new Stripe(apiKey, {
-    apiVersion: "2025-11-17.clover",
+    apiVersion: "2025-02-24.acacia",
   });
 };
 
@@ -76,7 +78,7 @@ export const processRefundForGoal = onCall(
       const refundMilestones = [25, 50, 75, 100];
       const eligibleMilestones = refundMilestones.filter(
         (milestone) =>
-          currentRatio >= milestone && !refundedPercentages.includes(milestone),
+          currentRatio >= milestone && !refundedPercentages.includes(milestone)
       );
 
       if (eligibleMilestones.length === 0) {
@@ -112,12 +114,12 @@ export const processRefundForGoal = onCall(
 
           console.log(
             `Refund processed for goal ${goalId} ` +
-              `at ${milestone}% milestone: ${refund.id}`,
+              `at ${milestone}% milestone: ${refund.id}`
           );
         } catch (error: any) {
           console.error(
             `Error processing refund for milestone ${milestone}:`,
-            error,
+            error
           );
           // 一部の返金が失敗しても続行
         }
@@ -147,5 +149,5 @@ export const processRefundForGoal = onCall(
       console.error("Error processing refund for goal:", error);
       throw new Error(error.message || "Failed to process refund for goal");
     }
-  },
+  }
 );

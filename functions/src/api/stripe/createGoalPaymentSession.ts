@@ -1,17 +1,19 @@
 import * as admin from "firebase-admin";
 import { onCall } from "firebase-functions/v2/https";
 import Stripe from "stripe";
+import * as functions from "firebase-functions";
 
 const getDb = () => admin.firestore();
 
 // Stripeの初期化（環境変数が設定されている場合のみ）
 const getStripe = () => {
-  const apiKey = process.env.STRIPE_SECRET_KEY;
+  const apiKey =
+    process.env.STRIPE_SECRET_KEY || functions.config().stripe_secret_key?.key;
   if (!apiKey) {
     throw new Error("STRIPE_SECRET_KEY is not configured");
   }
   return new Stripe(apiKey, {
-    apiVersion: "2025-11-17.clover",
+    apiVersion: "2025-02-24.acacia",
   });
 };
 
@@ -112,5 +114,5 @@ export const createGoalPaymentSession = onCall(
       console.error("Error creating payment session:", error);
       throw new Error(error.message || "Failed to create payment session");
     }
-  },
+  }
 );
