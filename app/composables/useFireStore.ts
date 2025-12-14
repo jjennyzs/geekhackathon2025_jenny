@@ -262,6 +262,10 @@ export const useFireStore = () => {
     ratio: number;
     steps: StepWithChildren[];
     todos?: TodoWithId[];
+    betAmount?: number;
+    isLocked?: boolean;
+    paymentIntentId?: string;
+    refundedPercentages?: number[];
   };
 
   /**

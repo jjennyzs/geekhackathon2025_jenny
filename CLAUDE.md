@@ -9,6 +9,7 @@ This is a Nuxt 3 application with Firebase backend (Firestore, Functions) for go
 ## Development Commands
 
 ### Frontend (Nuxt)
+
 ```bash
 npm install              # Install dependencies (root directory)
 npm run dev              # Start dev server (http://localhost:3000)
@@ -20,6 +21,7 @@ npm run fix              # Format and fix linting issues
 ```
 
 ### Backend (Firebase Functions)
+
 ```bash
 cd functions
 npm install              # Install function dependencies
@@ -33,6 +35,7 @@ npm run logs             # View function logs
 ## Environment Configuration
 
 The project uses environment-specific configuration prefixed by NODE_ENV:
+
 - Copy `@.env` to `.env` and populate with Firebase credentials
 - Environment variables follow pattern: `{NODE_ENV}_{VARIABLE_NAME}`
 - Example: `development_apiKey`, `production_projectId`
@@ -79,17 +82,20 @@ functions/
 ### Key Technical Patterns
 
 **Firebase Initialization:**
+
 - Primary initialization happens in `app/plugins/firebaseInit.global.ts` as a route middleware
 - Configures Firebase Functions region as `asia-northeast1`
 - Development mode connects to local emulator at `localhost:5001`
 - Runtime config pulls environment variables from `nuxt.config.ts`
 
 **Firestore Data Access:**
+
 - All Firestore operations centralized in `app/composables/useFireStore.ts`
 - Uses Vue 3 Composition API with `useNuxtApp()` to access `$db`
 - Key functions include: `getGoalWithSteps()`, `getAllGoalsWithSteps()`, `addStep()`, `updateStep()`, `deleteStep()`, `addTodo()`, `updateTodo()`, `deleteTodo()`
 
 **Data Hierarchy:**
+
 ```
 users/{userId}/
   └── goals/{goalId}
@@ -99,10 +105,12 @@ users/{userId}/
 ```
 
 **Routing:**
+
 - Dynamic user routes: `/users/[userId]` for user-specific pages
 - Category-based filtering handled in client-side with reactive `selectedCategoryId`
 
 **UI Framework:**
+
 - Tailwind CSS for styling (configured via `@nuxtjs/tailwindcss` module)
 - Global SCSS in `app/assets/css/common.scss`
 - Custom Tailwind class whitelist in ESLint config for dynamic class generation
@@ -110,12 +118,14 @@ users/{userId}/
 ### Code Quality Tools
 
 **ESLint Configuration:**
+
 - Extends Nuxt TypeScript config, Tailwind recommended rules, and Prettier
 - Console statements allowed (`no-console: off`)
 - Multi-word component names not enforced for simpler Vue components
 - Custom Tailwind class whitelist for dynamic classes (e.g., `.+-primary`, `.+-error`)
 
 **Prettier:**
+
 - Integrated with Tailwind plugin for class sorting
 - Format command available as `npm run format`
 

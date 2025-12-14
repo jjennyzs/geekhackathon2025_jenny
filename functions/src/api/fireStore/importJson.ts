@@ -4,16 +4,6 @@ import { onCall } from "firebase-functions/v2/https";
 // admin.initializeApp()が呼ばれた後にfirestore()を取得する
 const getDb = () => admin.firestore();
 
-/**
- * ランダムなIDを生成する関数
- */
-function generateId(): string {
-  return (
-    Math.random().toString(36).substring(2, 15) +
-    Math.random().toString(36).substring(2, 15)
-  );
-}
-
 // 型定義
 interface TodoDoc {
   task: string;
@@ -48,7 +38,7 @@ async function importStepsRecursively(
   categoryId: string,
   goalId: string,
   steps: StepWithChildren[],
-  parentPath: string[] = []
+  parentPath: string[] = [],
 ): Promise<void> {
   const db = getDb();
 
@@ -66,18 +56,16 @@ async function importStepsRecursively(
       docRef = docRef.collection("steps").doc(stepId);
     }
 
-    // ステップを作成（新しいIDを自動生成）
-    const newStepId = generateId();
-    const stepRef = docRef.collection("steps").doc(newStepId);
+    // ステップを作成
+    const stepRef = docRef.collection("steps").doc(step.id);
     await stepRef.set({
       title: step.title,
     });
 
-    // ステップ配下のtodoをインポート（新しいIDを自動生成）
+    // ステップ配下のtodoをインポート
     if (step.todos && step.todos.length > 0) {
       for (const todo of step.todos) {
-        const newTodoId = generateId();
-        const todoRef = stepRef.collection("todo").doc(newTodoId);
+        const todoRef = stepRef.collection("todo").doc(todo.id);
         await todoRef.set({
           task: todo.task,
           isFinished: todo.isFinished,
@@ -90,7 +78,7 @@ async function importStepsRecursively(
     if (step.steps && step.steps.length > 0) {
       await importStepsRecursively(userId, categoryId, goalId, step.steps, [
         ...parentPath,
-        newStepId,
+        step.id,
       ]);
     }
   }
@@ -103,7 +91,7 @@ async function importGoalTodos(
   userId: string,
   categoryId: string,
   goalId: string,
-  todos: TodoWithId[]
+  todos: TodoWithId[],
 ): Promise<void> {
   const db = getDb();
   const goalRef = db
@@ -115,8 +103,7 @@ async function importGoalTodos(
     .doc(goalId);
 
   for (const todo of todos) {
-    const newTodoId = generateId();
-    const todoRef = goalRef.collection("todo").doc(newTodoId);
+    const todoRef = goalRef.collection("todo").doc(todo.id);
     await todoRef.set({
       task: todo.task,
       isFinished: todo.isFinished,
@@ -131,19 +118,18 @@ async function importGoalTodos(
 async function importGoalWithAllSteps(
   userId: string,
   categoryId: string,
-  goalData: GoalWithSteps
-): Promise<string> {
+  goalData: GoalWithSteps,
+): Promise<void> {
   const db = getDb();
 
-  // ゴールを作成（新しいIDを自動生成）
-  const newGoalId = generateId();
+  // ゴールを作成
   const goalRef = db
     .collection("users")
     .doc(userId)
     .collection("category")
     .doc(categoryId)
     .collection("goals")
-    .doc(newGoalId);
+    .doc(goalData.id);
 
   await goalRef.set({
     title: goalData.title,
@@ -152,7 +138,7 @@ async function importGoalWithAllSteps(
 
   // ゴール配下のtodoをインポート
   if (goalData.todos && goalData.todos.length > 0) {
-    await importGoalTodos(userId, categoryId, newGoalId, goalData.todos);
+    await importGoalTodos(userId, categoryId, goalData.id, goalData.todos);
   }
 
   // すべてのステップ階層を再帰的にインポート
@@ -160,12 +146,10 @@ async function importGoalWithAllSteps(
     await importStepsRecursively(
       userId,
       categoryId,
-      newGoalId,
-      goalData.steps
+      goalData.id,
+      goalData.steps,
     );
   }
-
-  return newGoalId;
 }
 
 /**
@@ -184,20 +168,20 @@ export const importJson = onCall(
     }
 
     // goalDataの基本的な検証
-    if (!goalData.title || goalData.ratio === undefined) {
-      throw new Error("goalDataには title, ratio が必要です");
+    if (!goalData.id || !goalData.title || goalData.ratio === undefined) {
+      throw new Error("goalDataには id, title, ratio が必要です");
     }
 
     try {
-      const newGoalId = await importGoalWithAllSteps(userId, categoryId, goalData);
+      await importGoalWithAllSteps(userId, categoryId, goalData);
       return {
         success: true,
         message: "データのインポートに成功しました",
-        goalId: newGoalId,
+        goalId: goalData.id,
       };
     } catch (error: any) {
       console.error("JSONインポートエラー:", error);
       throw new Error(`JSONインポートに失敗しました: ${error.message}`);
     }
-  }
+  },
 );

@@ -155,7 +155,7 @@ watch(
       drawRadarChart();
     }, 100);
   },
-  { deep: true }
+  { deep: true },
 );
 </script>
 
