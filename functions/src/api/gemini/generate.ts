@@ -212,7 +212,6 @@ async function generateTaskList(prompt: string): Promise<GoalWithSteps> {
  */
 export const generateTaskListFromPrompt = onCall(
   {
-    cors: ["http://localhost:3000", "http://127.0.0.1:3000"],
     region: "asia-northeast1",
   },
   async (request) => {
